@@ -1,0 +1,89 @@
+"use server";
+
+import bcrypt from "bcryptjs";
+import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
+import { prisma } from "@/lib/db";
+import { createSession, deleteSession } from "@/lib/session";
+import { verifySession } from "@/lib/dal";
+
+export interface AuthFormState {
+  error?: string;
+}
+
+function isValidEmail(email: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+export async function signup(
+  _prevState: AuthFormState,
+  formData: FormData
+): Promise<AuthFormState> {
+  const name = String(formData.get("name") ?? "").trim();
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const phone = String(formData.get("phone") ?? "").trim();
+  const password = String(formData.get("password") ?? "");
+  const accountType = String(formData.get("accountType") ?? "customer");
+  const next = String(formData.get("next") ?? "") || "/";
+
+  if (!name) return { error: "Please enter your name." };
+  if (!isValidEmail(email)) return { error: "Please enter a valid email address." };
+  if (password.length < 8) return { error: "Password must be at least 8 characters." };
+
+  const existing = await prisma.user.findUnique({ where: { email } });
+  if (existing) return { error: "An account with that email already exists." };
+
+  const passwordHash = await bcrypt.hash(password, 10);
+  const user = await prisma.user.create({
+    data: {
+      name,
+      email,
+      phone: phone || null,
+      passwordHash,
+      isVendor: accountType === "vendor",
+    },
+  });
+
+  await createSession(user.id);
+  redirect(next);
+}
+
+export async function login(
+  _prevState: AuthFormState,
+  formData: FormData
+): Promise<AuthFormState> {
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const password = String(formData.get("password") ?? "");
+  const next = String(formData.get("next") ?? "") || "/";
+
+  if (!email || !password) {
+    return { error: "Please enter your email and password." };
+  }
+
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user) return { error: "Incorrect email or password." };
+
+  const valid = await bcrypt.compare(password, user.passwordHash);
+  if (!valid) return { error: "Incorrect email or password." };
+
+  await createSession(user.id);
+  redirect(next);
+}
+
+export async function logout() {
+  await deleteSession();
+  redirect("/");
+}
+
+export async function becomeVendor() {
+  const session = await verifySession();
+  if (!session) redirect("/login?next=/become-a-vendor");
+
+  await prisma.user.update({
+    where: { id: session.userId },
+    data: { isVendor: true },
+  });
+
+  revalidatePath("/", "layout");
+  redirect("/vendor/dashboard");
+}

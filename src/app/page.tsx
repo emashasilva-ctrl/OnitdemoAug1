@@ -1,65 +1,150 @@
-import Image from "next/image";
+import Link from "next/link";
+import {
+  ArrowRight,
+  CalendarCheck,
+  ShieldCheck,
+  Sparkles,
+} from "lucide-react";
+import {
+  DoodleLeaf,
+  DoodlePalm,
+  DoodleSparkle,
+  DoodleSwirl,
+  DoodleWave,
+} from "@/components/doodles";
+import { Marquee } from "@/components/marquee";
+import { PhotoCarousel } from "@/components/photo-carousel";
+import { Button } from "@/components/ui/button";
+import { homePhotos } from "@/lib/carousel-photos";
+
+const TICKER_ITEMS = [
+  "Real-Time Booking",
+  "Beauty & Dining",
+  "No Booking Fees",
+  "Card On File For Dining",
+];
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <>
+      {/* Hero */}
+      <section className="relative flex min-h-[820px] flex-col overflow-hidden">
+        <PhotoCarousel photos={homePhotos} />
+        <Marquee items={TICKER_ITEMS} />
+
+        <DoodleLeaf className="pointer-events-none absolute left-[6%] top-24 z-10 hidden size-12 -rotate-8 text-lime sm:block" />
+        <DoodlePalm className="pointer-events-none absolute bottom-24 left-[4%] z-10 hidden size-16 rotate-3 text-sky sm:block" />
+        <DoodleWave className="pointer-events-none absolute right-[8%] top-60 z-10 hidden size-20 text-lime sm:block" />
+        <DoodleSparkle className="pointer-events-none absolute right-[7%] top-24 z-10 hidden size-9 rotate-6 text-sky sm:block" />
+        <DoodleSparkle className="pointer-events-none absolute right-[13%] bottom-32 z-10 hidden size-6 text-lime sm:block" />
+
+        <div className="relative z-10 flex flex-1 flex-col items-center justify-center gap-6 px-4 py-16 text-center sm:px-6">
+          <h1 className="max-w-3xl text-balance font-display-black text-4xl leading-[0.98] tracking-tight text-white uppercase sm:text-6xl lg:text-7xl">
+            Colombo&apos;s
+            <br />
+            Concierge<span className="text-primary">.</span>
+            <br />
+            On Demand.
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="max-w-md text-balance text-lg text-white/85">
+            One account, real-time booking across the city — starting with
+            salons and restaurants.
           </p>
+          <div className="mt-1 flex flex-wrap items-center justify-center gap-3">
+            <Link
+              href="/beauty"
+              className="rounded-full bg-primary px-7 py-4 text-sm font-bold tracking-wide text-primary-foreground uppercase transition-transform hover:scale-[1.03]"
+            >
+              Explore Beauty
+            </Link>
+            <Link
+              href="/dining"
+              className="rounded-full border-2 border-primary px-7 py-4 text-sm font-bold tracking-wide text-sky uppercase transition-transform hover:scale-[1.03]"
+            >
+              Explore Dining
+            </Link>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      </section>
+
+      {/* How it works */}
+      <section className="border-y border-border bg-secondary/30">
+        <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
+          <div className="mb-10 text-center">
+            <h2 className="flex items-center justify-center gap-2 font-heading text-2xl font-semibold text-foreground sm:text-3xl">
+              How On It! works
+              <DoodleSparkle className="size-5 text-primary/60" />
+            </h2>
+            <p className="mt-2 text-muted-foreground">
+              The same simple flow, whatever you&apos;re booking.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
+            {[
+              {
+                icon: Sparkles,
+                title: "Choose a category",
+                body: "Start with Beauty or Dining — more concierge categories are on the way.",
+              },
+              {
+                icon: CalendarCheck,
+                title: "Book in real time",
+                body: "See live availability and reserve the exact slot that suits you.",
+              },
+              {
+                icon: ShieldCheck,
+                title: "Show up",
+                body: "Pay at the salon, or hold your table with a card on file.",
+              },
+            ].map((step, i) => (
+              <div
+                key={step.title}
+                className="relative flex flex-col gap-3 rounded-2xl border border-border bg-card p-6"
+              >
+                <span className="flex size-11 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+                  <step.icon className="size-5" />
+                </span>
+                <span className="absolute top-6 right-6 font-heading text-2xl font-semibold text-muted-foreground/30">
+                  {i + 1}
+                </span>
+                <h3 className="font-heading text-lg font-semibold text-foreground">
+                  {step.title}
+                </h3>
+                <p className="text-sm text-muted-foreground">{step.body}</p>
+              </div>
+            ))}
+          </div>
         </div>
-      </main>
-    </div>
+      </section>
+
+      {/* Partner CTA */}
+      <section className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
+        <div className="flex flex-col items-center gap-6 rounded-3xl bg-foreground px-6 py-12 text-center sm:px-16">
+          <DoodleSwirl className="size-16 text-background/40" />
+          <h2 className="max-w-md font-heading text-2xl font-semibold text-balance text-background sm:text-3xl">
+            Own a business in Colombo?
+          </h2>
+          <p className="max-w-md text-balance text-background/70">
+            List with On It! for free, in whichever category fits your
+            business.
+          </p>
+          <div className="mt-1 flex flex-col gap-3 sm:flex-row">
+            <Button asChild size="lg" variant="secondary">
+              <Link href="/beauty/partner">
+                List Your Salon
+                <ArrowRight className="size-4" />
+              </Link>
+            </Button>
+            <Button asChild size="lg" variant="secondary">
+              <Link href="/dining/partner">
+                List Your Restaurant
+                <ArrowRight className="size-4" />
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </section>
+    </>
   );
 }
