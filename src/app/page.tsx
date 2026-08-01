@@ -19,9 +19,9 @@ import { homePhotos } from "@/lib/carousel-photos";
 
 const TICKER_ITEMS = [
   "Real-Time Booking",
-  "Beauty & Dining",
+  "Salons Across Colombo",
   "No Booking Fees",
-  "Card On File For Dining",
+  "Book In Seconds",
 ];
 
 export default function Home() {
@@ -47,8 +47,8 @@ export default function Home() {
             On Demand.
           </h1>
           <p className="max-w-md text-balance text-lg text-white/85">
-            One account, real-time booking across the city — starting with
-            salons and restaurants.
+            One account, real-time booking for the best salons across the
+            city.
           </p>
           <div className="mt-1 flex flex-wrap items-center justify-center gap-3">
             <Link
@@ -57,18 +57,12 @@ export default function Home() {
             >
               Explore Beauty
             </Link>
-            <Link
-              href="/dining"
-              className="rounded-full border-2 border-primary px-7 py-4 text-sm font-bold tracking-wide text-sky uppercase transition-transform hover:scale-[1.03]"
-            >
-              Explore Dining
-            </Link>
           </div>
         </div>
       </section>
 
       {/* How it works */}
-      <section className="border-y border-border bg-secondary/30">
+      <section id="how-it-works" className="border-y border-border bg-secondary/30">
         <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
           <div className="mb-10 text-center">
             <h2 className="flex items-center justify-center gap-2 font-heading text-2xl font-semibold text-foreground sm:text-3xl">
@@ -76,7 +70,7 @@ export default function Home() {
               <DoodleSparkle className="size-5 text-primary/60" />
             </h2>
             <p className="mt-2 text-muted-foreground">
-              The same simple flow, whatever you&apos;re booking.
+              Booking a salon in Colombo, made simple.
             </p>
           </div>
 
@@ -84,8 +78,8 @@ export default function Home() {
             {[
               {
                 icon: Sparkles,
-                title: "Choose a category",
-                body: "Start with Beauty or Dining — more concierge categories are on the way.",
+                title: "Browse salons",
+                body: "Explore the best salons across Colombo, all in one place.",
               },
               {
                 icon: CalendarCheck,
@@ -95,7 +89,7 @@ export default function Home() {
               {
                 icon: ShieldCheck,
                 title: "Show up",
-                body: "Pay at the salon, or hold your table with a card on file.",
+                body: "Pay at the salon — no booking fees, no card on file.",
               },
             ].map((step, i) => (
               <div
@@ -123,22 +117,15 @@ export default function Home() {
         <div className="flex flex-col items-center gap-6 rounded-3xl bg-foreground px-6 py-12 text-center sm:px-16">
           <DoodleSwirl className="size-16 text-background/40" />
           <h2 className="max-w-md font-heading text-2xl font-semibold text-balance text-background sm:text-3xl">
-            Own a business in Colombo?
+            Own a salon in Colombo?
           </h2>
           <p className="max-w-md text-balance text-background/70">
-            List with On It! for free, in whichever category fits your
-            business.
+            List with On It! for free and start taking real-time bookings.
           </p>
           <div className="mt-1 flex flex-col gap-3 sm:flex-row">
             <Button asChild size="lg" variant="secondary">
               <Link href="/beauty/partner">
                 List Your Salon
-                <ArrowRight className="size-4" />
-              </Link>
-            </Button>
-            <Button asChild size="lg" variant="secondary">
-              <Link href="/dining/partner">
-                List Your Restaurant
                 <ArrowRight className="size-4" />
               </Link>
             </Button>

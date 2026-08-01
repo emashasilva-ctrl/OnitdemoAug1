@@ -6,6 +6,14 @@ import { Phone } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Sheet,
   SheetContent,
@@ -15,7 +23,8 @@ import {
   SheetFooter,
 } from "@/components/ui/sheet";
 import { cancelVendorAppointment } from "@/lib/actions/vendor-bookings";
-import type { VendorCalendarAppointment } from "@/lib/data/vendor";
+import { assignAppointmentTeamMember } from "@/lib/actions/team-members";
+import type { VendorCalendarAppointment, VendorTeamMember } from "@/lib/data/vendor";
 
 export function CalendarAppointmentDetails({
   appointment,
@@ -24,18 +33,38 @@ export function CalendarAppointmentDetails({
   kind,
   venueId,
   onCancelled,
+  teamMembers = [],
+  onTeamMemberAssigned,
 }: {
   appointment: VendorCalendarAppointment | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  kind: "salon" | "restaurant";
+  kind: "salon";
   venueId: string;
   onCancelled: (id: string) => void;
+  teamMembers?: VendorTeamMember[];
+  onTeamMemberAssigned?: (id: string, teamMemberId: string | null) => void;
 }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
+  const [assigning, setAssigning] = useState(false);
 
   if (!appointment) return null;
+
+  async function handleAssign(value: string) {
+    if (!appointment) return;
+    const teamMemberId = value === "__unassigned__" ? null : value;
+    setAssigning(true);
+    const result = await assignAppointmentTeamMember(appointment.id, venueId, teamMemberId);
+    setAssigning(false);
+    if (!result.success) {
+      toast.error(result.error);
+      return;
+    }
+    toast.success("Team member updated");
+    onTeamMemberAssigned?.(appointment.id, teamMemberId);
+    router.refresh();
+  }
 
   async function handleCancel() {
     if (!appointment) return;
@@ -88,6 +117,28 @@ export function CalendarAppointmentDetails({
             <div>
               <p className="text-sm text-muted-foreground">Notes</p>
               <p className="text-sm text-foreground">{appointment.notes}</p>
+            </div>
+          )}
+          {kind === "salon" && teamMembers.length > 0 && appointment.status === "UPCOMING" && (
+            <div className="flex flex-col gap-1.5">
+              <Label>Team member</Label>
+              <Select
+                value={appointment.teamMemberId ?? "__unassigned__"}
+                onValueChange={handleAssign}
+                disabled={assigning}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Unassigned" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__unassigned__">Unassigned</SelectItem>
+                  {teamMembers.map((m) => (
+                    <SelectItem key={m.id} value={m.id}>
+                      {m.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           )}
         </div>

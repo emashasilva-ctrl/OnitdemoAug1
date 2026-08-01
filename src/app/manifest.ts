@@ -5,12 +5,12 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "On It! — Colombo Concierge Booking",
     short_name: "On It!",
     description:
-      "Colombo's concierge booking marketplace. Real-time booking for salons and restaurants across the city.",
+      "Colombo's concierge booking marketplace. Real-time booking for salons across the city.",
     start_url: "/",
     display: "standalone",
     background_color: "#F7F8F9",
     theme_color: "#F7F8F9",
-    categories: ["lifestyle", "shopping", "beauty", "food"],
+    categories: ["lifestyle", "shopping", "beauty"],
     icons: [
       {
         src: "/icon-192",

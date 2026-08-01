@@ -13,7 +13,7 @@ export function VendorCancelButton({
   isManual,
 }: {
   id: string;
-  kind: "salon" | "restaurant";
+  kind: "salon";
   venueId: string;
   isManual: boolean;
 }) {

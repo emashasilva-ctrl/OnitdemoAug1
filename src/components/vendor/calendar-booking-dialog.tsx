@@ -21,17 +21,16 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { createManualSalonBooking, createManualRestaurantBooking } from "@/lib/actions/vendor-bookings";
+import { createManualSalonBooking } from "@/lib/actions/vendor-bookings";
 import { minutesToLabel, minutesToTimeValue, timeValueToMinutes } from "@/lib/time";
-import type { VendorCalendarAppointment, RawOpenHours } from "@/lib/data/vendor";
-import type { Salon, Restaurant } from "@/lib/types";
+import type { VendorCalendarAppointment, RawOpenHours, VendorTeamMember } from "@/lib/data/vendor";
+import type { Salon } from "@/lib/types";
 
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-type Props = (
-  | { kind: "salon"; venue: Salon }
-  | { kind: "restaurant"; venue: Restaurant }
-) & {
+type Props = {
+  kind: "salon";
+  venue: Salon;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   openHours: RawOpenHours[];
@@ -39,6 +38,7 @@ type Props = (
   initialDate: string;
   initialMinutes: number;
   onCreated: () => void;
+  teamMembers?: VendorTeamMember[];
 };
 
 export function CalendarBookingDialog({
@@ -51,25 +51,22 @@ export function CalendarBookingDialog({
   initialDate,
   initialMinutes,
   onCreated,
+  teamMembers = [],
 }: Props) {
   const [date, setDate] = useState(initialDate);
   const [timeValue, setTimeValue] = useState(minutesToTimeValue(initialMinutes));
-  const [serviceId, setServiceId] = useState<string | null>(
-    kind === "salon" ? (venue.services[0]?.id ?? null) : null
-  );
-  const [partySize, setPartySize] = useState(2);
+  const [serviceId, setServiceId] = useState<string | null>(venue.services[0]?.id ?? null);
+  const [teamMemberId, setTeamMemberId] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const durationMins =
-    kind === "salon" ? venue.services.find((s) => s.id === serviceId)?.durationMins ?? 60 : 90;
+  const durationMins = venue.services.find((s) => s.id === serviceId)?.durationMins ?? 60;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!name || !phone) return;
-    if (kind === "salon" && !serviceId) return;
+    if (!name || !phone || !serviceId) return;
 
     const startMinutes = timeValueToMinutes(timeValue);
     const endMinutes = startMinutes + durationMins;
@@ -96,28 +93,17 @@ export function CalendarBookingDialog({
 
     setSubmitting(true);
     const time = minutesToLabel(startMinutes);
-    const result =
-      kind === "salon"
-        ? await createManualSalonBooking({
-            salonId: venue.id,
-            serviceId: serviceId!,
-            date,
-            startMinutes,
-            time,
-            customerName: name,
-            customerPhone: phone,
-            notes: notes || undefined,
-          })
-        : await createManualRestaurantBooking({
-            restaurantId: venue.id,
-            partySize,
-            date,
-            startMinutes,
-            time,
-            customerName: name,
-            customerPhone: phone,
-            notes: notes || undefined,
-          });
+    const result = await createManualSalonBooking({
+      salonId: venue.id,
+      serviceId,
+      date,
+      startMinutes,
+      time,
+      customerName: name,
+      customerPhone: phone,
+      notes: notes || undefined,
+      teamMemberId,
+    });
     setSubmitting(false);
 
     if (!result.success) {
@@ -137,33 +123,49 @@ export function CalendarBookingDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          {kind === "salon" ? (
+          <div className="flex flex-col gap-1.5">
+            <Label>Service</Label>
+            <Select
+              value={serviceId ?? undefined}
+              onValueChange={(v) => {
+                setServiceId(v);
+                setTeamMemberId(null);
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Choose a service" />
+              </SelectTrigger>
+              <SelectContent>
+                {venue.services.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.name} — {s.durationMins} min
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {teamMembers.length > 0 && (
             <div className="flex flex-col gap-1.5">
-              <Label>Service</Label>
-              <Select value={serviceId ?? undefined} onValueChange={setServiceId}>
+              <Label>Team member (optional)</Label>
+              <Select
+                value={teamMemberId ?? "__unassigned__"}
+                onValueChange={(v) => setTeamMemberId(v === "__unassigned__" ? null : v)}
+              >
                 <SelectTrigger>
-                  <SelectValue placeholder="Choose a service" />
+                  <SelectValue placeholder="Unassigned" />
                 </SelectTrigger>
                 <SelectContent>
-                  {venue.services.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
-                      {s.name} — {s.durationMins} min
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="__unassigned__">Unassigned</SelectItem>
+                  {teamMembers
+                    .filter((m) => !serviceId || m.serviceIds.includes(serviceId))
+                    .map((m) => (
+                      <SelectItem key={m.id} value={m.id}>
+                        {m.name}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="cb-party">Party size</Label>
-              <Input
-                id="cb-party"
-                type="number"
-                min={1}
-                required
-                value={partySize}
-                onChange={(e) => setPartySize(Number(e.target.value))}
-              />
             </div>
           )}
 

@@ -60,6 +60,7 @@ function mapSalon(row: SalonRow): Salon {
       })),
     featured: row.featured,
     phone: row.phone,
+    mioSalonEmbedCode: row.mioSalonEmbedCode,
   };
 }
 

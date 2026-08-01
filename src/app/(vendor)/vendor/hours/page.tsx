@@ -1,5 +1,6 @@
 import { getCurrentUser } from "@/lib/dal";
 import { getVendorVenue, getRawOpenHours } from "@/lib/data/vendor";
+import { updateSalonHours } from "@/lib/actions/vendor";
 import { HoursEditor } from "@/components/vendor/hours-editor";
 
 export default async function VendorHoursPage() {
@@ -11,6 +12,7 @@ export default async function VendorHoursPage() {
 
   const { kind, venue } = vendorVenue;
   const initialHours = await getRawOpenHours(kind, venue.id);
+  const onSave = updateSalonHours.bind(null, venue.id);
 
-  return <HoursEditor kind={kind} venueId={venue.id} initialHours={initialHours} />;
+  return <HoursEditor initialHours={initialHours} onSave={onSave} />;
 }

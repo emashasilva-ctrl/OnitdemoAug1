@@ -1,20 +1,17 @@
 import "server-only";
 import { prisma } from "@/lib/db";
 import { getSalonByOwnerId } from "@/lib/data/salons";
-import { getRestaurantByOwnerId } from "@/lib/data/restaurants";
-import type { Salon, Restaurant } from "@/lib/types";
+import { toLocalISODate } from "@/lib/time";
+import type { Salon } from "@/lib/types";
 
-export type VendorVenue =
-  | { kind: "salon"; venue: Salon }
-  | { kind: "restaurant"; venue: Restaurant }
-  | null;
+// A discriminated union of one for now — a future vertical (e.g. fitness)
+// adds its own `{ kind: "fitness"; venue: FitnessStudio }` member here, the
+// same way this would have grown if Dining were still around.
+export type VendorVenue = { kind: "salon"; venue: Salon } | null;
 
 export async function getVendorVenue(userId: string): Promise<VendorVenue> {
   const salon = await getSalonByOwnerId(userId);
   if (salon) return { kind: "salon", venue: salon };
-
-  const restaurant = await getRestaurantByOwnerId(userId);
-  if (restaurant) return { kind: "restaurant", venue: restaurant };
 
   return null;
 }
@@ -29,11 +26,11 @@ export interface RawOpenHours {
 }
 
 export async function getRawOpenHours(
-  kind: "salon" | "restaurant",
+  kind: "salon",
   venueId: string
 ): Promise<RawOpenHours[]> {
   const rows = await prisma.openHours.findMany({
-    where: kind === "salon" ? { salonId: venueId } : { restaurantId: venueId },
+    where: { salonId: venueId },
   });
   return rows
     .map((r) => ({ id: r.id, day: r.day, openMinutes: r.openMinutes, closeMinutes: r.closeMinutes }))
@@ -52,13 +49,15 @@ export interface VendorAppointmentListItem {
 }
 
 export async function getUpcomingAppointmentsForVenue(
-  kind: "salon" | "restaurant",
+  kind: "salon",
   venueId: string
 ): Promise<VendorAppointmentListItem[]> {
+  const todayISO = toLocalISODate(new Date());
   const rows = await prisma.appointment.findMany({
     where: {
       status: "UPCOMING",
-      ...(kind === "salon" ? { salonId: venueId } : { restaurantId: venueId }),
+      date: { gte: todayISO },
+      salonId: venueId,
     },
     include: { service: true },
     orderBy: [{ date: "asc" }, { startMinutes: "asc" }],
@@ -72,7 +71,7 @@ export async function getUpcomingAppointmentsForVenue(
     customerPhone: row.customerPhone,
     notes: row.notes,
     isManual: row.isManual,
-    label: kind === "salon" ? (row.service?.name ?? "Appointment") : `Party of ${row.partySize}`,
+    label: row.service?.name ?? "Appointment",
   }));
 }
 
@@ -85,11 +84,11 @@ export interface VendorPromotion {
 }
 
 export async function getAllPromotionsForVenue(
-  kind: "salon" | "restaurant",
+  kind: "salon",
   venueId: string
 ): Promise<VendorPromotion[]> {
   const rows = await prisma.promotion.findMany({
-    where: kind === "salon" ? { salonId: venueId } : { restaurantId: venueId },
+    where: { salonId: venueId },
     orderBy: { createdAt: "desc" },
   });
   return rows.map((r) => ({
@@ -113,17 +112,18 @@ export interface VendorCalendarAppointment {
   isManual: boolean;
   status: "UPCOMING" | "CANCELLED" | "COMPLETED";
   label: string;
+  teamMemberId: string | null;
 }
 
 export async function getAppointmentsForRange(
-  kind: "salon" | "restaurant",
+  kind: "salon",
   venueId: string,
   startDateISO: string,
   endDateISO: string
 ): Promise<VendorCalendarAppointment[]> {
   const rows = await prisma.appointment.findMany({
     where: {
-      ...(kind === "salon" ? { salonId: venueId } : { restaurantId: venueId }),
+      salonId: venueId,
       date: { gte: startDateISO, lte: endDateISO },
     },
     include: { service: true },
@@ -135,12 +135,41 @@ export async function getAppointmentsForRange(
     date: row.date,
     time: row.time,
     startMinutes: row.startMinutes,
-    durationMins: row.durationMins ?? (kind === "salon" ? 60 : 90),
+    durationMins: row.durationMins ?? 60,
     customerName: row.customerName,
     customerPhone: row.customerPhone,
     notes: row.notes,
     isManual: row.isManual,
     status: row.status,
-    label: kind === "salon" ? (row.service?.name ?? "Appointment") : `Party of ${row.partySize}`,
+    label: row.service?.name ?? "Appointment",
+    teamMemberId: row.teamMemberId,
   }));
+}
+
+export interface VendorTeamMember {
+  id: string;
+  name: string;
+  role: string | null;
+  serviceIds: string[];
+}
+
+export async function getTeamMembersForSalon(salonId: string): Promise<VendorTeamMember[]> {
+  const rows = await prisma.teamMember.findMany({
+    where: { salonId },
+    include: { services: { select: { id: true } } },
+    orderBy: { createdAt: "asc" },
+  });
+  return rows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    role: r.role,
+    serviceIds: r.services.map((s) => s.id),
+  }));
+}
+
+export async function getTeamMemberHours(teamMemberId: string): Promise<RawOpenHours[]> {
+  const rows = await prisma.teamMemberHours.findMany({ where: { teamMemberId } });
+  return rows
+    .map((r) => ({ id: r.id, day: r.day, openMinutes: r.openMinutes, closeMinutes: r.closeMinutes }))
+    .sort((a, b) => DAY_ORDER.indexOf(a.day) - DAY_ORDER.indexOf(b.day));
 }

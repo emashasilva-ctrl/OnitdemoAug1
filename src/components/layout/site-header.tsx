@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, CalendarCheck, ArrowLeftRight } from "lucide-react";
+import { Menu, CalendarCheck } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,14 +18,15 @@ import { logout } from "@/lib/actions/auth";
 
 type CurrentUser = { name: string; isVendor: boolean } | null;
 
-type Vertical = "beauty" | "dining" | "neutral";
+// A single-vertical config for now — a future vertical (e.g. fitness) adds its
+// own key here with its own nav/book links, the same way "dining" used to.
+type Vertical = "beauty" | "neutral";
 
 const VERTICAL_CONFIG: Record<
   Vertical,
   {
     navLinks: { label: string; href: string }[];
     book: { label: string; href: string } | null;
-    switchTo: { label: string; href: string } | null;
   }
 > = {
   beauty: {
@@ -35,30 +36,19 @@ const VERTICAL_CONFIG: Record<
       { label: "For Salons", href: "/beauty/partner" },
     ],
     book: { label: "Book Now", href: "/beauty/salons" },
-    switchTo: { label: "Dining", href: "/dining" },
-  },
-  dining: {
-    navLinks: [
-      { label: "Browse Restaurants", href: "/dining/restaurants" },
-      { label: "How It Works", href: "/dining#how-it-works" },
-      { label: "For Restaurants", href: "/dining/partner" },
-    ],
-    book: { label: "Reserve Now", href: "/dining/restaurants" },
-    switchTo: { label: "Beauty", href: "/beauty" },
   },
   neutral: {
     navLinks: [
-      { label: "Beauty", href: "/beauty" },
-      { label: "Dining", href: "/dining" },
+      { label: "Browse Salons", href: "/beauty/salons" },
+      { label: "How It Works", href: "/#how-it-works" },
+      { label: "For Salons", href: "/beauty/partner" },
     ],
-    book: null,
-    switchTo: null,
+    book: { label: "Book Now", href: "/beauty/salons" },
   },
 };
 
 function getVertical(pathname: string): Vertical {
   if (pathname.startsWith("/beauty")) return "beauty";
-  if (pathname.startsWith("/dining")) return "dining";
   return "neutral";
 }
 
@@ -66,7 +56,7 @@ export function SiteHeader({ user }: { user: CurrentUser }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const vertical = getVertical(pathname);
-  const { navLinks, book, switchTo } = VERTICAL_CONFIG[vertical];
+  const { navLinks, book } = VERTICAL_CONFIG[vertical];
 
   return (
     <header
@@ -76,15 +66,6 @@ export function SiteHeader({ user }: { user: CurrentUser }) {
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
         <div className="flex items-center gap-3">
           <Logo />
-          {switchTo && (
-            <Link
-              href={switchTo.href}
-              className="hidden items-center gap-1.5 rounded-full border border-border px-3 py-1 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground sm:flex"
-            >
-              <ArrowLeftRight className="size-3" />
-              {switchTo.label}
-            </Link>
-          )}
         </div>
 
         <nav className="hidden items-center gap-1 md:flex" aria-label="Primary">
@@ -180,17 +161,6 @@ export function SiteHeader({ user }: { user: CurrentUser }) {
                     My Bookings
                   </Link>
                 </SheetClose>
-                {switchTo && (
-                  <SheetClose asChild>
-                    <Link
-                      href={switchTo.href}
-                      className="flex items-center gap-2 rounded-lg px-3 py-3 text-base font-medium text-foreground hover:bg-muted"
-                    >
-                      <ArrowLeftRight className="size-4" />
-                      Switch to {switchTo.label}
-                    </Link>
-                  </SheetClose>
-                )}
                 <div className="mt-2 border-t border-border pt-2">
                   {user ? (
                     <div className="px-3 py-2">

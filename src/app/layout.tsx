@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     template: "%s | On It!",
   },
   description:
-    "On It! is Colombo's concierge booking marketplace — real-time booking for salons and restaurants across the city.",
+    "On It! is Colombo's concierge booking marketplace — real-time booking for salons across the city.",
   applicationName: "On It!",
   appleWebApp: {
     capable: true,

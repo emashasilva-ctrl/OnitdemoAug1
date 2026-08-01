@@ -1,11 +1,11 @@
 "use server";
 
 import { prisma } from "@/lib/db";
-import { requireOwnedSalon, requireOwnedRestaurant, revalidateVendorAndPublic } from "@/lib/actions/vendor";
+import { requireOwnedSalon, revalidateVendorAndPublic } from "@/lib/actions/vendor";
 import type { VendorActionResult } from "@/lib/actions/vendor";
 
 export interface PromotionInput {
-  venueKind: "salon" | "restaurant";
+  venueKind: "salon";
   venueId: string;
   title: string;
   description: string;
@@ -13,13 +13,13 @@ export interface PromotionInput {
   endDate?: string | null;
 }
 
-async function checkOwnership(venueKind: "salon" | "restaurant", venueId: string) {
-  return venueKind === "salon" ? requireOwnedSalon(venueId) : requireOwnedRestaurant(venueId);
+async function checkOwnership(venueKind: "salon", venueId: string) {
+  return requireOwnedSalon(venueId);
 }
 
 function slugFromCheck(check: Awaited<ReturnType<typeof checkOwnership>>): string {
   if (!check.ok) throw new Error("unreachable");
-  return "salon" in check ? check.salon.slug : check.restaurant.slug;
+  return check.salon.slug;
 }
 
 export async function createPromotion(input: PromotionInput): Promise<VendorActionResult> {
@@ -35,7 +35,7 @@ export async function createPromotion(input: PromotionInput): Promise<VendorActi
       description: input.description,
       startDate: input.startDate || null,
       endDate: input.endDate || null,
-      ...(input.venueKind === "salon" ? { salonId: input.venueId } : { restaurantId: input.venueId }),
+      salonId: input.venueId,
     },
   });
   await revalidateVendorAndPublic(input.venueKind, slugFromCheck(check));
@@ -64,17 +64,14 @@ export async function updatePromotion(id: string, input: PromotionInput): Promis
 
 export async function deletePromotion(
   id: string,
-  venueKind: "salon" | "restaurant",
+  venueKind: "salon",
   venueId: string
 ): Promise<VendorActionResult> {
   const check = await checkOwnership(venueKind, venueId);
   if (!check.ok) return { success: false, error: check.error };
 
   await prisma.promotion.deleteMany({
-    where: {
-      id,
-      ...(venueKind === "salon" ? { salonId: venueId } : { restaurantId: venueId }),
-    },
+    where: { id, salonId: venueId },
   });
   await revalidateVendorAndPublic(venueKind, slugFromCheck(check));
   return { success: true };

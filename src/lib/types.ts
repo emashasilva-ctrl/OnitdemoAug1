@@ -25,31 +25,6 @@ export interface Service {
   description: string;
 }
 
-export type CuisineSlug =
-  | "sri-lankan"
-  | "indian"
-  | "seafood"
-  | "italian"
-  | "asian-fusion"
-  | "cafe-brunch"
-  | "steakhouse"
-  | "bakery-dessert";
-
-export interface Cuisine {
-  slug: CuisineSlug;
-  label: string;
-  shortLabel: string;
-  description: string;
-  icon: string;
-}
-
-export interface MenuHighlight {
-  id: string;
-  name: string;
-  priceLKR: number;
-  description: string;
-}
-
 export interface Review {
   id: string;
   author: string;
@@ -94,31 +69,7 @@ export interface Salon {
   activePromotions: Promotion[];
   featured: boolean;
   phone: string;
-}
-
-export interface Restaurant {
-  id: string;
-  slug: string;
-  name: string;
-  tagline: string;
-  area: string;
-  address: string;
-  lat: number;
-  lng: number;
-  cuisines: CuisineSlug[];
-  rating: number;
-  reviewCount: number;
-  priceLevel: 1 | 2 | 3 | 4;
-  imageSeed: string;
-  gallerySeeds: string[];
-  about: string;
-  amenities: string[];
-  menuHighlights: MenuHighlight[];
-  partySizes: number[];
-  openHours: OpenHours[];
-  reviews: Review[];
-  featured: boolean;
-  phone: string;
+  mioSalonEmbedCode: string | null;
 }
 
 interface AppointmentBase {
@@ -143,13 +94,7 @@ export interface SalonBookingRecord extends AppointmentBase {
   durationMins: number;
 }
 
-export interface RestaurantReservationRecord extends AppointmentBase {
-  kind: "restaurant";
-  restaurantId: string;
-  restaurantName: string;
-  restaurantArea: string;
-  partySize: number;
-  cardLast4: string;
-}
-
-export type AppointmentRecord = SalonBookingRecord | RestaurantReservationRecord;
+// A discriminated union of one for now — a future vertical (e.g. fitness) adds
+// its own record type as a second member, the same way this would have grown
+// if Dining were still around.
+export type AppointmentRecord = SalonBookingRecord;

@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { Star, MapPin, Phone, Clock, Check, Megaphone } from "lucide-react";
 import { BookingPanel } from "@/components/salons/booking-panel";
+import { MioSalonBookingEmbed } from "@/components/salons/mio-salon-booking-embed";
 import { CategoryIcon } from "@/components/category-icon";
 import { VenueImage } from "@/components/venue-image";
 import { Badge } from "@/components/ui/badge";
@@ -134,7 +135,11 @@ export default async function SalonDetailPage(
                 Services
               </h2>
               <div className="mt-4">
-                <BookingPanel salon={salon} currentUser={currentUser} />
+                {salon.mioSalonEmbedCode ? (
+                  <MioSalonBookingEmbed embedCode={salon.mioSalonEmbedCode} />
+                ) : (
+                  <BookingPanel salon={salon} currentUser={currentUser} />
+                )}
               </div>
             </div>
 

@@ -8,7 +8,7 @@ const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const PIXELS_PER_HOUR = 48;
 const GRID_HEIGHT = 24 * PIXELS_PER_HOUR;
 
-function closedSegmentsForDay(date: Date, openHours: RawOpenHours[]) {
+export function closedSegmentsForDay(date: Date, openHours: RawOpenHours[]) {
   const label = DAY_LABELS[date.getDay()];
   const ranges = openHours
     .filter((r) => r.day === label)
@@ -24,12 +24,12 @@ function closedSegmentsForDay(date: Date, openHours: RawOpenHours[]) {
   return segments;
 }
 
-interface PositionedAppointment extends VendorCalendarAppointment {
+export interface PositionedAppointment extends VendorCalendarAppointment {
   column: number;
   columnCount: number;
 }
 
-function layoutAppointments(items: VendorCalendarAppointment[]): PositionedAppointment[] {
+export function layoutAppointments(items: VendorCalendarAppointment[]): PositionedAppointment[] {
   const sorted = [...items].sort((a, b) => a.startMinutes - b.startMinutes);
   const positioned: PositionedAppointment[] = [];
   let cluster: VendorCalendarAppointment[] = [];

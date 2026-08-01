@@ -19,24 +19,34 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Calendar as DatePicker } from "@/components/ui/calendar";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { fetchCalendarAppointments } from "@/lib/actions/vendor-calendar";
 import { toLocalISODate } from "@/lib/time";
-import type { VendorCalendarAppointment, RawOpenHours } from "@/lib/data/vendor";
-import type { Salon, Restaurant } from "@/lib/types";
+import type { VendorCalendarAppointment, RawOpenHours, VendorTeamMember } from "@/lib/data/vendor";
+import type { Salon } from "@/lib/types";
 import { CalendarMonthView } from "@/components/vendor/calendar-month-view";
 import { CalendarHourGrid } from "@/components/vendor/calendar-hour-grid";
+import { CalendarStaffDayView } from "@/components/vendor/calendar-staff-day-view";
 import { CalendarBookingDialog } from "@/components/vendor/calendar-booking-dialog";
 import { CalendarAppointmentDetails } from "@/components/vendor/calendar-appointment-details";
 
 type View = "month" | "week" | "day";
+const ALL_STAFF = "__all__";
 
-type Props = (
-  | { kind: "salon"; venue: Salon }
-  | { kind: "restaurant"; venue: Restaurant }
-) & {
+type Props = {
+  kind: "salon";
+  venue: Salon;
   initialDate: string;
   initialAppointments: VendorCalendarAppointment[];
   initialOpenHours: RawOpenHours[];
+  teamMembers?: VendorTeamMember[];
+  teamMemberHours?: Record<string, RawOpenHours[]>;
 };
 
 function rangeForView(view: View, date: Date): { start: Date; end: Date } {
@@ -50,7 +60,15 @@ function rangeForView(view: View, date: Date): { start: Date; end: Date } {
   };
 }
 
-export function CalendarView({ kind, venue, initialDate, initialAppointments, initialOpenHours }: Props) {
+export function CalendarView({
+  kind,
+  venue,
+  initialDate,
+  initialAppointments,
+  initialOpenHours,
+  teamMembers = [],
+  teamMemberHours = {},
+}: Props) {
   const router = useRouter();
   const [view, setView] = useState<View>("month");
   const [currentDate, setCurrentDate] = useState(() => parseISO(initialDate));
@@ -59,7 +77,12 @@ export function CalendarView({ kind, venue, initialDate, initialAppointments, in
   const [jumpOpen, setJumpOpen] = useState(false);
   const [bookingState, setBookingState] = useState<{ date: string; minutes: number } | null>(null);
   const [detailsAppointment, setDetailsAppointment] = useState<VendorCalendarAppointment | null>(null);
+  const [staffFilter, setStaffFilter] = useState(ALL_STAFF);
   const requestIdRef = useRef(0);
+
+  const hasTeamMembers = teamMembers.length > 0;
+  const filteredAppointments =
+    staffFilter === ALL_STAFF ? appointments : appointments.filter((a) => a.teamMemberId === staffFilter);
 
   async function loadRange(v: View, date: Date) {
     const { start, end } = rangeForView(v, date);
@@ -104,6 +127,11 @@ export function CalendarView({ kind, venue, initialDate, initialAppointments, in
     router.refresh();
   }
 
+  function handleTeamMemberAssigned(id: string, teamMemberId: string | null) {
+    setAppointments((prev) => prev.map((a) => (a.id === id ? { ...a, teamMemberId } : a)));
+    setDetailsAppointment((prev) => (prev && prev.id === id ? { ...prev, teamMemberId } : prev));
+  }
+
   const weekRange = rangeForView("week", currentDate);
   const headerLabel =
     view === "month"
@@ -132,13 +160,30 @@ export function CalendarView({ kind, venue, initialDate, initialAppointments, in
           </Button>
           <p className="font-heading text-lg font-semibold text-foreground">{headerLabel}</p>
         </div>
-        <Tabs value={view} onValueChange={(v) => setView(v as View)}>
-          <TabsList variant="line">
-            <TabsTrigger value="day">Day</TabsTrigger>
-            <TabsTrigger value="week">Week</TabsTrigger>
-            <TabsTrigger value="month">Month</TabsTrigger>
-          </TabsList>
-        </Tabs>
+        <div className="flex items-center gap-2">
+          {hasTeamMembers && (
+            <Select value={staffFilter} onValueChange={setStaffFilter}>
+              <SelectTrigger className="w-40">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL_STAFF}>All team members</SelectItem>
+                {teamMembers.map((m) => (
+                  <SelectItem key={m.id} value={m.id}>
+                    {m.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          <Tabs value={view} onValueChange={(v) => setView(v as View)}>
+            <TabsList variant="line">
+              <TabsTrigger value="day">Day</TabsTrigger>
+              <TabsTrigger value="week">Week</TabsTrigger>
+              <TabsTrigger value="month">Month</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
       </div>
 
       {loading && <p className="text-sm text-muted-foreground">Loading…</p>}
@@ -146,15 +191,25 @@ export function CalendarView({ kind, venue, initialDate, initialAppointments, in
       {view === "month" ? (
         <CalendarMonthView
           monthAnchor={currentDate}
-          appointments={appointments}
+          appointments={filteredAppointments}
           openHours={initialOpenHours}
           onDayClick={handleDayClick}
+          onAppointmentClick={setDetailsAppointment}
+        />
+      ) : view === "day" && hasTeamMembers && staffFilter === ALL_STAFF ? (
+        <CalendarStaffDayView
+          day={currentDate}
+          appointments={appointments}
+          teamMembers={teamMembers}
+          hoursByMember={teamMemberHours}
+          salonOpenHours={initialOpenHours}
+          onSlotClick={handleSlotClick}
           onAppointmentClick={setDetailsAppointment}
         />
       ) : (
         <CalendarHourGrid
           days={gridDays}
-          appointments={appointments}
+          appointments={filteredAppointments}
           openHours={initialOpenHours}
           onSlotClick={handleSlotClick}
           onAppointmentClick={setDetailsAppointment}
@@ -179,42 +234,25 @@ export function CalendarView({ kind, venue, initialDate, initialAppointments, in
         </DialogContent>
       </Dialog>
 
-      {bookingState &&
-        (kind === "salon" ? (
-          <CalendarBookingDialog
-            kind="salon"
-            venue={venue}
-            open={!!bookingState}
-            onOpenChange={(o) => {
-              if (!o) setBookingState(null);
-            }}
-            openHours={initialOpenHours}
-            existingAppointments={appointments}
-            initialDate={bookingState.date}
-            initialMinutes={bookingState.minutes}
-            onCreated={() => {
-              setBookingState(null);
-              refetch();
-            }}
-          />
-        ) : (
-          <CalendarBookingDialog
-            kind="restaurant"
-            venue={venue}
-            open={!!bookingState}
-            onOpenChange={(o) => {
-              if (!o) setBookingState(null);
-            }}
-            openHours={initialOpenHours}
-            existingAppointments={appointments}
-            initialDate={bookingState.date}
-            initialMinutes={bookingState.minutes}
-            onCreated={() => {
-              setBookingState(null);
-              refetch();
-            }}
-          />
-        ))}
+      {bookingState && (
+        <CalendarBookingDialog
+          kind="salon"
+          venue={venue}
+          open={!!bookingState}
+          onOpenChange={(o) => {
+            if (!o) setBookingState(null);
+          }}
+          openHours={initialOpenHours}
+          existingAppointments={appointments}
+          initialDate={bookingState.date}
+          initialMinutes={bookingState.minutes}
+          teamMembers={teamMembers}
+          onCreated={() => {
+            setBookingState(null);
+            refetch();
+          }}
+        />
+      )}
 
       <CalendarAppointmentDetails
         appointment={detailsAppointment}
@@ -225,6 +263,8 @@ export function CalendarView({ kind, venue, initialDate, initialAppointments, in
         kind={kind}
         venueId={venue.id}
         onCancelled={handleCancelled}
+        teamMembers={teamMembers}
+        onTeamMemberAssigned={handleTeamMemberAssigned}
       />
     </div>
   );

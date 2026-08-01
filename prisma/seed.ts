@@ -1,8 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { salons } from "./seed-data/salons";
-import { restaurants } from "./seed-data/restaurants";
-import type { OpenHours, Review, Service, MenuHighlight } from "../src/lib/types";
+import type { OpenHours, Review, Service } from "../src/lib/types";
 
 const prisma = new PrismaClient();
 
@@ -71,47 +70,6 @@ async function main() {
   }
   console.log(`  Seeded ${salons.length} salons.`);
 
-  for (const r of restaurants) {
-    await prisma.restaurant.create({
-      data: {
-        id: r.id,
-        slug: r.slug,
-        name: r.name,
-        tagline: r.tagline,
-        area: r.area,
-        address: r.address,
-        lat: r.lat,
-        lng: r.lng,
-        cuisines: JSON.stringify(r.cuisines),
-        rating: r.rating,
-        reviewCount: r.reviewCount,
-        priceLevel: r.priceLevel,
-        imageSeed: r.imageSeed,
-        gallerySeeds: JSON.stringify(r.gallerySeeds),
-        about: r.about,
-        amenities: JSON.stringify(r.amenities),
-        partySizes: JSON.stringify(r.partySizes),
-        featured: r.featured,
-        phone: r.phone,
-        menuHighlights: {
-          create: r.menuHighlights.map(({ id, ...rest }: MenuHighlight) => ({ id, ...rest })),
-        },
-        openHours: { create: parseOpenHours(r.openHours) },
-        reviews: {
-          // Restaurant review ids (e.g. "r1rev1") are unique globally already,
-          // but let Prisma generate fresh ids for consistency with salons above.
-          create: r.reviews.map((review: Review) => ({
-            author: review.author,
-            rating: review.rating,
-            date: new Date(review.date),
-            comment: review.comment,
-          })),
-        },
-      },
-    });
-  }
-  console.log(`  Seeded ${restaurants.length} restaurants.`);
-
   const passwordHash = await bcrypt.hash(DEMO_PASSWORD, 10);
 
   await prisma.user.create({
@@ -138,25 +96,30 @@ async function main() {
     data: { ownerId: demoSalonVendor.id },
   });
 
-  const demoRestaurantVendor = await prisma.user.create({
+  // A second demo vendor whose salon books through MioSalon's embedded widget
+  // instead of On It!'s native flow, for testing/demoing that integration.
+  const demoMioSalonVendor = await prisma.user.create({
     data: {
-      email: "vendor-dining@onit.lk",
+      email: "vendor-miosalon@onit.lk",
       passwordHash,
-      name: "Kavindu Ranasinghe",
-      phone: "+94 77 345 6789",
+      name: "Nadeeka Perera",
+      phone: "+94 77 456 7890",
       isVendor: true,
     },
   });
-  await prisma.restaurant.update({
-    where: { id: restaurants[0].id },
-    data: { ownerId: demoRestaurantVendor.id },
+  await prisma.salon.update({
+    where: { id: salons[1].id },
+    data: {
+      ownerId: demoMioSalonVendor.id,
+      mioSalonEmbedCode: `<div id="miosalon-widget"></div><script src="https://booking.miosalon.io/embed.js" data-branch="${salons[1].slug}"></script>`,
+    },
   });
 
   console.log("\nDemo accounts (all use the same password):");
-  console.log(`  Customer:          customer@onit.lk`);
-  console.log(`  Vendor (salon):    vendor-salon@onit.lk   -> owns "${salons[0].name}"`);
-  console.log(`  Vendor (dining):   vendor-dining@onit.lk  -> owns "${restaurants[0].name}"`);
-  console.log(`  Password for all:  ${DEMO_PASSWORD}`);
+  console.log(`  Customer:            customer@onit.lk`);
+  console.log(`  Vendor (salon):      vendor-salon@onit.lk      -> owns "${salons[0].name}"`);
+  console.log(`  Vendor (MioSalon):   vendor-miosalon@onit.lk   -> owns "${salons[1].name}"`);
+  console.log(`  Password for all:    ${DEMO_PASSWORD}`);
 }
 
 main()

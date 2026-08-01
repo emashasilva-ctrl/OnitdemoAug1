@@ -1,15 +1,12 @@
 import Link from "next/link";
-import { CalendarX2, Clock, MapPin, Scissors, Ticket, UtensilsCrossed } from "lucide-react";
+import { CalendarX2, Clock, MapPin, Scissors, Ticket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CancelButton } from "@/components/bookings/cancel-button";
 import { getMyAppointments, type AppointmentListItem } from "@/lib/actions/bookings";
 
 function AppointmentCard({ appointment }: { appointment: AppointmentListItem }) {
-  const isSalon = appointment.kind === "salon";
-  const viewHref = isSalon
-    ? `/beauty/salons/${appointment.venueSlug}`
-    : `/dining/restaurants/${appointment.venueSlug}`;
+  const viewHref = `/beauty/salons/${appointment.venueSlug}`;
 
   return (
     <div className="rounded-2xl border border-border bg-card p-5">
@@ -17,21 +14,15 @@ function AppointmentCard({ appointment }: { appointment: AppointmentListItem }) 
         <div>
           <div className="flex items-center gap-2">
             <span className="flex size-6 items-center justify-center rounded-full bg-accent text-accent-foreground">
-              {isSalon ? (
-                <Scissors className="size-3" />
-              ) : (
-                <UtensilsCrossed className="size-3" />
-              )}
+              <Scissors className="size-3" />
             </span>
             <p className="font-heading font-semibold text-foreground">
-              {isSalon ? appointment.serviceName : `Table for ${appointment.partySize}`}
+              {appointment.serviceName}
             </p>
           </div>
           <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
             <MapPin className="size-3.5" />
-            {isSalon
-              ? `${appointment.salonName} · ${appointment.salonArea}`
-              : `${appointment.restaurantName} · ${appointment.restaurantArea}`}
+            {appointment.salonName} &middot; {appointment.salonArea}
           </p>
         </div>
         {appointment.status === "cancelled" && (
@@ -47,11 +38,7 @@ function AppointmentCard({ appointment }: { appointment: AppointmentListItem }) 
           <Clock className="size-3.5" />
           {appointment.date} at {appointment.time}
         </span>
-        {isSalon ? (
-          <span>LKR {appointment.priceLKR.toLocaleString()} &middot; pay at salon</span>
-        ) : (
-          <span>Card on file &middot;&middot;&middot;&middot; {appointment.cardLast4}</span>
-        )}
+        <span>LKR {appointment.priceLKR.toLocaleString()} &middot; pay at salon</span>
       </div>
 
       {appointment.notes && (
@@ -61,7 +48,7 @@ function AppointmentCard({ appointment }: { appointment: AppointmentListItem }) 
       <div className="mt-4 flex flex-wrap gap-2">
         {appointment.venueSlug && (
           <Button variant="outline" size="sm" asChild>
-            <Link href={viewHref}>{isSalon ? "View salon" : "View restaurant"}</Link>
+            <Link href={viewHref}>View salon</Link>
           </Button>
         )}
         {appointment.status === "upcoming" && <CancelButton id={appointment.id} />}
@@ -88,7 +75,7 @@ export default async function BookingsPage() {
         My Bookings
       </h1>
       <p className="mt-2 text-muted-foreground">
-        Salon appointments and restaurant reservations, tied to your account.
+        Salon appointments, tied to your account.
       </p>
 
       {appointments.length === 0 ? (
@@ -100,14 +87,11 @@ export default async function BookingsPage() {
             No bookings yet
           </p>
           <p className="max-w-sm text-sm text-muted-foreground">
-            Book a salon appointment or a table, and it will show up here.
+            Book a salon appointment, and it will show up here.
           </p>
           <div className="flex flex-wrap justify-center gap-2">
             <Button asChild>
               <Link href="/beauty/salons">Browse Salons</Link>
-            </Button>
-            <Button variant="outline" asChild>
-              <Link href="/dining/restaurants">Browse Restaurants</Link>
             </Button>
           </div>
         </div>

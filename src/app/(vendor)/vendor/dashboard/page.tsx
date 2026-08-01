@@ -1,11 +1,12 @@
-import Link from "next/link";
-import { Calendar, Clock, ListChecks, Phone } from "lucide-react";
+import { Calendar, Phone } from "lucide-react";
 import { getCurrentUser } from "@/lib/dal";
-import { getVendorVenue, getUpcomingAppointmentsForVenue } from "@/lib/data/vendor";
-import { Button } from "@/components/ui/button";
+import { getVendorVenue, getUpcomingAppointmentsForVenue, getTeamMembersForSalon } from "@/lib/data/vendor";
+import { getSalonAnalytics } from "@/lib/data/vendor-analytics";
+import { toLocalISODate } from "@/lib/time";
 import { Badge } from "@/components/ui/badge";
 import { ManualBookingDialog } from "@/components/vendor/manual-booking-dialog";
 import { VendorCancelButton } from "@/components/vendor/vendor-cancel-button";
+import { DashboardAnalytics } from "@/components/vendor/dashboard-analytics";
 
 export default async function VendorDashboardPage() {
   const user = await getCurrentUser();
@@ -16,62 +17,21 @@ export default async function VendorDashboardPage() {
 
   const { kind, venue } = vendorVenue;
   const appointments = await getUpcomingAppointmentsForVenue(kind, venue.id);
-  const itemCount = kind === "salon" ? venue.services.length : venue.menuHighlights.length;
+  const teamMembers = await getTeamMembersForSalon(venue.id);
+  const itemCount = venue.services.length;
+
+  const todayISO = toLocalISODate(new Date());
+  const analytics = await getSalonAnalytics(venue.id, "30d", todayISO);
 
   return (
     <div className="flex flex-col gap-8">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="rounded-2xl border border-border bg-card p-5">
-          <p className="text-sm text-muted-foreground">
-            {kind === "salon" ? "Services" : "Menu items"}
-          </p>
-          <p className="mt-1 font-heading text-2xl font-semibold text-foreground">{itemCount}</p>
-        </div>
-        <div className="rounded-2xl border border-border bg-card p-5">
-          <p className="text-sm text-muted-foreground">Upcoming bookings</p>
-          <p className="mt-1 font-heading text-2xl font-semibold text-foreground">
-            {appointments.length}
-          </p>
-        </div>
-        <div className="rounded-2xl border border-border bg-card p-5">
-          <p className="text-sm text-muted-foreground">Rating</p>
-          <p className="mt-1 font-heading text-2xl font-semibold text-foreground">
-            {venue.rating} <span className="text-sm text-muted-foreground">({venue.reviewCount})</span>
-          </p>
-        </div>
-      </div>
-
-      <div className="flex flex-wrap gap-2">
-        <Button asChild>
-          <Link href="/vendor/services">
-            <ListChecks className="size-4" />
-            Manage {kind === "salon" ? "services" : "menu"}
-          </Link>
-        </Button>
-        <Button variant="outline" asChild>
-          <Link href="/vendor/hours">
-            <Clock className="size-4" />
-            Manage hours
-          </Link>
-        </Button>
-        <Button variant="outline" asChild>
-          <Link href={kind === "salon" ? `/beauty/salons/${venue.slug}` : `/dining/restaurants/${venue.slug}`}>
-            View public page
-          </Link>
-        </Button>
-      </div>
-
       <div>
         <div className="flex items-center justify-between gap-2">
           <h2 className="flex items-center gap-2 font-heading text-lg font-semibold text-foreground">
             <Calendar className="size-4" />
             Upcoming bookings
           </h2>
-          {kind === "salon" ? (
-            <ManualBookingDialog kind="salon" venue={venue} />
-          ) : (
-            <ManualBookingDialog kind="restaurant" venue={venue} />
-          )}
+          <ManualBookingDialog kind={kind} venue={venue} teamMembers={teamMembers} />
         </div>
         {appointments.length === 0 ? (
           <p className="mt-3 text-sm text-muted-foreground">No upcoming bookings yet.</p>
@@ -111,6 +71,27 @@ export default async function VendorDashboardPage() {
           </div>
         )}
       </div>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="rounded-2xl border border-border bg-card p-5">
+          <p className="text-sm text-muted-foreground">Services</p>
+          <p className="mt-1 font-heading text-2xl font-semibold text-foreground">{itemCount}</p>
+        </div>
+        <div className="rounded-2xl border border-border bg-card p-5">
+          <p className="text-sm text-muted-foreground">Upcoming bookings</p>
+          <p className="mt-1 font-heading text-2xl font-semibold text-foreground">
+            {appointments.length}
+          </p>
+        </div>
+        <div className="rounded-2xl border border-border bg-card p-5">
+          <p className="text-sm text-muted-foreground">Rating</p>
+          <p className="mt-1 font-heading text-2xl font-semibold text-foreground">
+            {venue.rating} <span className="text-sm text-muted-foreground">({venue.reviewCount})</span>
+          </p>
+        </div>
+      </div>
+
+      <DashboardAnalytics salonId={venue.id} initialAnalytics={analytics} />
     </div>
   );
 }

@@ -12,16 +12,18 @@ const BASE_NAV_LINKS = [
 ];
 
 const PROMOTIONS_LINK = { label: "Promotions", href: "/vendor/promotions" };
+const TEAM_LINK = { label: "Team", href: "/vendor/team" };
+const CLIENTS_LINK = { label: "Clients", href: "/vendor/clients" };
 
 export function VendorNav({
   servicesLabel,
   kind,
 }: {
   servicesLabel: string;
-  kind: "salon" | "restaurant";
+  kind: "salon";
 }) {
   const pathname = usePathname();
-  const navLinks = kind === "salon" ? [...BASE_NAV_LINKS, PROMOTIONS_LINK] : BASE_NAV_LINKS;
+  const navLinks = [...BASE_NAV_LINKS, PROMOTIONS_LINK, TEAM_LINK, CLIENTS_LINK];
 
   return (
     <nav className="flex items-center gap-1 border-b border-border" aria-label="Vendor">

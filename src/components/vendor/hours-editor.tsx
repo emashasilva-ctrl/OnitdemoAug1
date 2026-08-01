@@ -6,7 +6,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { updateSalonHours, updateRestaurantHours, type HoursInput } from "@/lib/actions/vendor";
+import type { HoursInput, VendorActionResult } from "@/lib/actions/vendor";
 import { minutesToTimeValue, timeValueToMinutes } from "@/lib/time";
 import type { RawOpenHours } from "@/lib/data/vendor";
 
@@ -49,13 +49,13 @@ function hasInvalidOrOverlappingRanges(ranges: DayRange[]): boolean {
 }
 
 export function HoursEditor({
-  kind,
-  venueId,
   initialHours,
+  onSave,
+  onSaved,
 }: {
-  kind: "salon" | "restaurant";
-  venueId: string;
   initialHours: RawOpenHours[];
+  onSave: (hours: HoursInput[]) => Promise<VendorActionResult>;
+  onSaved?: () => void;
 }) {
   const router = useRouter();
   const [days, setDays] = useState<DayState[]>(() => buildInitialDays(initialHours));
@@ -126,8 +126,7 @@ export function HoursEditor({
       .flatMap((d) => d.ranges.map((r) => ({ day: d.day, openMinutes: r.openMinutes, closeMinutes: r.closeMinutes })));
 
     setSubmitting(true);
-    const result =
-      kind === "salon" ? await updateSalonHours(venueId, hours) : await updateRestaurantHours(venueId, hours);
+    const result = await onSave(hours);
     setSubmitting(false);
 
     if (!result.success) {
@@ -136,6 +135,7 @@ export function HoursEditor({
     }
     toast.success("Hours updated");
     router.refresh();
+    onSaved?.();
   }
 
   return (

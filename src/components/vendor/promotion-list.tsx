@@ -34,7 +34,7 @@ export function PromotionList({
   venueId,
   promotions,
 }: {
-  venueKind: "salon" | "restaurant";
+  venueKind: "salon";
   venueId: string;
   promotions: VendorPromotion[];
 }) {

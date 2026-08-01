@@ -30,14 +30,3 @@ export const beautyPhotos: CarouselPhoto[] = [
   surf,
   kingCoconuts,
 ];
-
-export const diningPhotos: CarouselPhoto[] = [
-  poolsideFruit,
-  surf,
-  kingCoconuts,
-  lighthouse,
-  stiltFishermen,
-  beach,
-  massage,
-  nails,
-];

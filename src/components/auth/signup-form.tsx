@@ -50,7 +50,7 @@ export function SignupForm({ next }: { next?: string }) {
           >
             <p className="font-medium text-foreground">Customer and vendor</p>
             <p className="text-sm text-muted-foreground">
-              I also own a salon or restaurant
+              I also own a salon
             </p>
           </button>
         </div>

@@ -1,19 +1,19 @@
 "use server";
 
 import { getAppointmentsForRange, type VendorCalendarAppointment } from "@/lib/data/vendor";
-import { requireOwnedSalon, requireOwnedRestaurant } from "@/lib/actions/vendor";
+import { requireOwnedSalon } from "@/lib/actions/vendor";
 
 export type FetchCalendarResult =
   | { success: true; appointments: VendorCalendarAppointment[] }
   | { success: false; error: string };
 
 export async function fetchCalendarAppointments(
-  kind: "salon" | "restaurant",
+  kind: "salon",
   venueId: string,
   startDateISO: string,
   endDateISO: string
 ): Promise<FetchCalendarResult> {
-  const check = kind === "salon" ? await requireOwnedSalon(venueId) : await requireOwnedRestaurant(venueId);
+  const check = await requireOwnedSalon(venueId);
   if (!check.ok) return { success: false, error: check.error };
 
   const appointments = await getAppointmentsForRange(kind, venueId, startDateISO, endDateISO);

@@ -23,23 +23,24 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { getSalonAvailability, getRestaurantAvailability, type TimeSlot } from "@/lib/actions/availability";
-import { createManualSalonBooking, createManualRestaurantBooking } from "@/lib/actions/vendor-bookings";
+import { getSalonAvailability, type TimeSlot } from "@/lib/actions/availability";
+import { createManualSalonBooking } from "@/lib/actions/vendor-bookings";
 import { buildDateOptions } from "@/lib/time";
-import type { Salon, Restaurant } from "@/lib/types";
+import type { Salon } from "@/lib/types";
+import type { VendorTeamMember } from "@/lib/data/vendor";
 
-type Props =
-  | { kind: "salon"; venue: Salon }
-  | { kind: "restaurant"; venue: Restaurant };
+type Props = {
+  kind: "salon";
+  venue: Salon;
+  teamMembers?: VendorTeamMember[];
+};
 
 export function ManualBookingDialog(props: Props) {
-  const { kind, venue } = props;
+  const { venue, teamMembers = [] } = props;
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [serviceId, setServiceId] = useState<string | null>(
-    kind === "salon" ? (venue.services[0]?.id ?? null) : null
-  );
-  const [partySize, setPartySize] = useState(2);
+  const [serviceId, setServiceId] = useState<string | null>(venue.services[0]?.id ?? null);
+  const [teamMemberId, setTeamMemberId] = useState<string | null>(null);
   const dateOptions = useMemo(() => buildDateOptions(), []);
   const [date, setDate] = useState(dateOptions[0].iso);
   const [slots, setSlots] = useState<TimeSlot[]>([]);
@@ -50,17 +51,13 @@ export function ManualBookingDialog(props: Props) {
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const durationMins =
-    kind === "salon" ? venue.services.find((s) => s.id === serviceId)?.durationMins ?? 60 : 90;
+  const durationMins = venue.services.find((s) => s.id === serviceId)?.durationMins ?? 60;
 
   async function loadSlots(dateForCheck: string, durationForCheck: number) {
     setSelectedSlot(null);
     setCheckingSlots(true);
     try {
-      const result =
-        kind === "salon"
-          ? await getSalonAvailability(venue.id, durationForCheck, dateForCheck)
-          : await getRestaurantAvailability(venue.id, durationForCheck, dateForCheck);
+      const result = await getSalonAvailability(venue.id, durationForCheck, dateForCheck);
       setSlots(result);
     } finally {
       setCheckingSlots(false);
@@ -78,8 +75,8 @@ export function ManualBookingDialog(props: Props) {
       setName("");
       setPhone("");
       setNotes("");
-      setPartySize(2);
-      if (kind === "salon") setServiceId(venue.services[0]?.id ?? null);
+      setTeamMemberId(null);
+      setServiceId(venue.services[0]?.id ?? null);
     }
   }
 
@@ -90,37 +87,29 @@ export function ManualBookingDialog(props: Props) {
 
   function handleServiceChange(id: string) {
     setServiceId(id);
-    const service = kind === "salon" ? venue.services.find((s) => s.id === id) : null;
+    setTeamMemberId(null);
+    const service = venue.services.find((s) => s.id === id);
     loadSlots(date, service?.durationMins ?? 60);
   }
 
+  const eligibleTeamMembers = teamMembers.filter((m) => !serviceId || m.serviceIds.includes(serviceId));
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!selectedSlot || !name || !phone) return;
+    if (!selectedSlot || !name || !phone || !serviceId) return;
 
     setSubmitting(true);
-    const result =
-      kind === "salon"
-        ? await createManualSalonBooking({
-            salonId: venue.id,
-            serviceId: serviceId!,
-            date,
-            startMinutes: selectedSlot.minutes,
-            time: selectedSlot.label,
-            customerName: name,
-            customerPhone: phone,
-            notes: notes || undefined,
-          })
-        : await createManualRestaurantBooking({
-            restaurantId: venue.id,
-            partySize,
-            date,
-            startMinutes: selectedSlot.minutes,
-            time: selectedSlot.label,
-            customerName: name,
-            customerPhone: phone,
-            notes: notes || undefined,
-          });
+    const result = await createManualSalonBooking({
+      salonId: venue.id,
+      serviceId,
+      date,
+      startMinutes: selectedSlot.minutes,
+      time: selectedSlot.label,
+      customerName: name,
+      customerPhone: phone,
+      notes: notes || undefined,
+      teamMemberId,
+    });
     setSubmitting(false);
 
     if (!result.success) {
@@ -132,7 +121,7 @@ export function ManualBookingDialog(props: Props) {
     router.refresh();
   }
 
-  if (kind === "salon" && venue.services.length === 0) {
+  if (venue.services.length === 0) {
     return (
       <p className="text-sm text-muted-foreground">
         Add a service before you can add a booking.
@@ -155,33 +144,44 @@ export function ManualBookingDialog(props: Props) {
           </DialogHeader>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            {kind === "salon" ? (
+            <div className="flex flex-col gap-1.5">
+              <Label>Service</Label>
+              <Select value={serviceId ?? undefined} onValueChange={handleServiceChange}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose a service" />
+                </SelectTrigger>
+                <SelectContent>
+                  {venue.services.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.name} — {s.durationMins} min
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {teamMembers.length > 0 && (
               <div className="flex flex-col gap-1.5">
-                <Label>Service</Label>
-                <Select value={serviceId ?? undefined} onValueChange={handleServiceChange}>
+                <Label>Team member (optional)</Label>
+                <Select
+                  value={teamMemberId ?? "__unassigned__"}
+                  onValueChange={(v) => setTeamMemberId(v === "__unassigned__" ? null : v)}
+                >
                   <SelectTrigger>
-                    <SelectValue placeholder="Choose a service" />
+                    <SelectValue placeholder="Unassigned" />
                   </SelectTrigger>
                   <SelectContent>
-                    {venue.services.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.name} — {s.durationMins} min
+                    <SelectItem value="__unassigned__">Unassigned</SelectItem>
+                    {eligibleTeamMembers.map((m) => (
+                      <SelectItem key={m.id} value={m.id}>
+                        {m.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="mb-party">Party size</Label>
-                <Input
-                  id="mb-party"
-                  type="number"
-                  min={1}
-                  required
-                  value={partySize}
-                  onChange={(e) => setPartySize(Number(e.target.value))}
-                />
+                {eligibleTeamMembers.length === 0 && (
+                  <p className="text-xs text-muted-foreground">No team member is assigned to this service yet.</p>
+                )}
               </div>
             )}
 

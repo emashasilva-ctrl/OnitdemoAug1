@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 
 export const metadata: Metadata = {
   title: "Become a vendor",
-  description: "List your salon or restaurant on On It!",
+  description: "List your salon on On It!",
 };
 
 export default async function BecomeAVendorPage() {
@@ -26,8 +26,8 @@ export default async function BecomeAVendorPage() {
         </h1>
         <p className="mt-2 text-muted-foreground">
           Switch on vendor access for your existing On It! account — no new
-          login required. You&apos;ll be able to manage a salon or restaurant
-          listing from the same account you use to book.
+          login required. You&apos;ll be able to manage a salon listing from
+          the same account you use to book.
         </p>
       </div>
 
@@ -38,14 +38,9 @@ export default async function BecomeAVendorPage() {
       </form>
 
       <p className="text-sm text-muted-foreground">
-        Don&apos;t have a salon or restaurant listed yet? Once you&apos;re a
-        vendor, you can{" "}
+        Don&apos;t have a salon listed yet? Once you&apos;re a vendor, you can{" "}
         <a href="/beauty/partner" className="text-primary hover:underline">
           list your salon
-        </a>{" "}
-        or{" "}
-        <a href="/dining/partner" className="text-primary hover:underline">
-          list your restaurant
         </a>
         .
       </p>

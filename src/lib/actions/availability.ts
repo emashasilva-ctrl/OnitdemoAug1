@@ -13,7 +13,7 @@ const STEP_MIN = 30;
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 async function computeSlots(
-  kind: "SALON" | "RESTAURANT",
+  kind: "SALON",
   venueId: string,
   durationMins: number,
   dateISO: string
@@ -22,10 +22,7 @@ async function computeSlots(
   const dayLabel = DAY_LABELS[date.getDay()];
 
   const openHoursRanges = await prisma.openHours.findMany({
-    where:
-      kind === "SALON"
-        ? { salonId: venueId, day: dayLabel }
-        : { restaurantId: venueId, day: dayLabel },
+    where: { salonId: venueId, day: dayLabel },
   });
   if (openHoursRanges.length === 0) return [];
 
@@ -34,7 +31,7 @@ async function computeSlots(
       kind,
       status: { not: "CANCELLED" },
       date: dateISO,
-      ...(kind === "SALON" ? { salonId: venueId } : { restaurantId: venueId }),
+      salonId: venueId,
     },
     select: { startMinutes: true, durationMins: true },
   });
@@ -68,12 +65,4 @@ export async function getSalonAvailability(
   dateISO: string
 ): Promise<TimeSlot[]> {
   return computeSlots("SALON", salonId, durationMins, dateISO);
-}
-
-export async function getRestaurantAvailability(
-  restaurantId: string,
-  durationMins: number,
-  dateISO: string
-): Promise<TimeSlot[]> {
-  return computeSlots("RESTAURANT", restaurantId, durationMins, dateISO);
 }

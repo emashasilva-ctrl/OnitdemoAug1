@@ -42,6 +42,24 @@ export function buildDateOptions(count = 7) {
   });
 }
 
+export function hasInvalidOrOverlappingRanges(
+  hours: { day: string; openMinutes: number; closeMinutes: number }[]
+): boolean {
+  const byDay = new Map<string, { openMinutes: number; closeMinutes: number }[]>();
+  for (const h of hours) {
+    if (h.openMinutes >= h.closeMinutes) return true;
+    if (!byDay.has(h.day)) byDay.set(h.day, []);
+    byDay.get(h.day)!.push(h);
+  }
+  for (const ranges of byDay.values()) {
+    const sorted = [...ranges].sort((a, b) => a.openMinutes - b.openMinutes);
+    for (let i = 1; i < sorted.length; i++) {
+      if (sorted[i].openMinutes < sorted[i - 1].closeMinutes) return true;
+    }
+  }
+  return false;
+}
+
 const DAY_ORDER = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 export function groupOpenHoursByDay(

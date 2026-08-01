@@ -10,7 +10,7 @@ const standardHours = [
   { day: "Sun", hours: "10:00 AM – 6:00 PM" },
 ];
 
-export const salons: Omit<Salon, "activePromotions">[] = [
+export const salons: Omit<Salon, "activePromotions" | "mioSalonEmbedCode">[] = [
   {
     id: "s1",
     slug: "the-parlour-colpetty",
