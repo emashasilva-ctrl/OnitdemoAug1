@@ -11,6 +11,7 @@ export default async function VendorLayout({ children }: { children: React.React
   if (!user.isVendor) redirect("/");
 
   const vendorVenue = await getVendorVenue(user.id);
+  if (!vendorVenue) redirect("/vendor/setup");
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
@@ -18,34 +19,16 @@ export default async function VendorLayout({ children }: { children: React.React
         <div>
           <p className="text-sm text-muted-foreground">Vendor dashboard</p>
           <h1 className="font-heading text-2xl font-semibold text-foreground sm:text-3xl">
-            {vendorVenue ? vendorVenue.venue.name : "No venue yet"}
+            {vendorVenue.venue.name}
           </h1>
         </div>
-        {vendorVenue && (
-          <Button variant="outline" asChild>
-            <Link href={`/beauty/salons/${vendorVenue.venue.slug}`}>View public page</Link>
-          </Button>
-        )}
+        <Button variant="outline" asChild>
+          <Link href={`/beauty/salons/${vendorVenue.venue.slug}`}>View public page</Link>
+        </Button>
       </div>
 
-      {vendorVenue ? (
-        <>
-          <VendorNav servicesLabel="Services" kind={vendorVenue.kind} />
-          <div className="pt-6">{children}</div>
-        </>
-      ) : (
-        <div className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-border p-8 text-center">
-          <p className="text-muted-foreground">
-            Your account is marked as a vendor, but isn&apos;t linked to a salon
-            listing yet.
-          </p>
-          <div className="flex flex-wrap justify-center gap-2">
-            <Button asChild>
-              <Link href="/beauty/partner">List Your Salon</Link>
-            </Button>
-          </div>
-        </div>
-      )}
+      <VendorNav servicesLabel="Services" kind={vendorVenue.kind} />
+      <div className="pt-6">{children}</div>
     </div>
   );
 }

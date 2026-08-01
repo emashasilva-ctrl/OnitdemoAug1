@@ -45,7 +45,7 @@ export async function signup(
   });
 
   await createSession(user.id);
-  redirect(next);
+  redirect(user.isVendor ? "/vendor/setup" : next);
 }
 
 export async function login(
@@ -67,6 +67,11 @@ export async function login(
   if (!valid) return { error: "Incorrect email or password." };
 
   await createSession(user.id);
+
+  if (user.isVendor) {
+    const ownedSalon = await prisma.salon.findFirst({ where: { ownerId: user.id }, select: { id: true } });
+    if (!ownedSalon) redirect("/vendor/setup");
+  }
   redirect(next);
 }
 
@@ -85,5 +90,5 @@ export async function becomeVendor() {
   });
 
   revalidatePath("/", "layout");
-  redirect("/vendor/dashboard");
+  redirect("/vendor/setup");
 }

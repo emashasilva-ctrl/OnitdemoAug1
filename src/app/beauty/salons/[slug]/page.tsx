@@ -99,13 +99,15 @@ export default async function SalonDetailPage(
             <p className="mt-1 text-lg text-muted-foreground">{salon.tagline}</p>
 
             <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
-              <div className="flex items-center gap-1.5">
-                <Star className="size-4 fill-primary text-primary" />
-                <span className="font-medium text-foreground">{salon.rating}</span>
-                <span className="text-muted-foreground">
-                  ({salon.reviewCount} reviews)
-                </span>
-              </div>
+              {salon.reviewCount > 0 && (
+                <div className="flex items-center gap-1.5">
+                  <Star className="size-4 fill-primary text-primary" />
+                  <span className="font-medium text-foreground">{salon.rating}</span>
+                  <span className="text-muted-foreground">
+                    ({salon.reviewCount} reviews)
+                  </span>
+                </div>
+              )}
               <div className="flex items-center gap-1.5 text-muted-foreground">
                 <MapPin className="size-4" />
                 {salon.area}

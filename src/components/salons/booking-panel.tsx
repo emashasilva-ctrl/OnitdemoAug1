@@ -136,8 +136,17 @@ export function BookingPanel({
     });
   }
 
-  const lowestPrice = Math.min(...salon.services.map((s) => s.priceLKR));
   const loginNext = `${pathname}`;
+
+  if (salon.services.length === 0) {
+    return (
+      <p className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+        This salon hasn&apos;t added any services yet — check back soon.
+      </p>
+    );
+  }
+
+  const lowestPrice = Math.min(...salon.services.map((s) => s.priceLKR));
 
   return (
     <>

@@ -33,7 +33,7 @@ const VERTICAL_CONFIG: Record<
     navLinks: [
       { label: "Browse Salons", href: "/beauty/salons" },
       { label: "How It Works", href: "/beauty#how-it-works" },
-      { label: "For Salons", href: "/beauty/partner" },
+      { label: "For Salons", href: "/become-a-vendor" },
     ],
     book: { label: "Book Now", href: "/beauty/salons" },
   },
@@ -41,7 +41,7 @@ const VERTICAL_CONFIG: Record<
     navLinks: [
       { label: "Browse Salons", href: "/beauty/salons" },
       { label: "How It Works", href: "/#how-it-works" },
-      { label: "For Salons", href: "/beauty/partner" },
+      { label: "For Salons", href: "/become-a-vendor" },
     ],
     book: { label: "Book Now", href: "/beauty/salons" },
   },

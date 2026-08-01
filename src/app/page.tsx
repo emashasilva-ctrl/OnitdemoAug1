@@ -124,7 +124,7 @@ export default function Home() {
           </p>
           <div className="mt-1 flex flex-col gap-3 sm:flex-row">
             <Button asChild size="lg" variant="secondary">
-              <Link href="/beauty/partner">
+              <Link href="/become-a-vendor">
                 List Your Salon
                 <ArrowRight className="size-4" />
               </Link>

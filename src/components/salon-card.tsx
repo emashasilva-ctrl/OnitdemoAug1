@@ -11,7 +11,9 @@ export function SalonCard({ salon }: { salon: Salon }) {
     (a, b) => a.durationMins - b.durationMins
   )[0];
   const todayISO = new Date().toISOString().slice(0, 10);
-  const slots = getSlotsForDate(salon.id, shortestService.durationMins, todayISO);
+  const slots = shortestService
+    ? getSlotsForDate(salon.id, shortestService.durationMins, todayISO)
+    : [];
   const nextSlot = nextAvailableLabel(slots);
 
   return (
@@ -44,11 +46,15 @@ export function SalonCard({ salon }: { salon: Salon }) {
 
         <p className="text-sm text-muted-foreground">{salon.area}</p>
 
-        <div className="flex items-center gap-1.5 text-sm">
-          <Star className="size-3.5 fill-primary text-primary" />
-          <span className="font-medium text-foreground">{salon.rating}</span>
-          <span className="text-muted-foreground">({salon.reviewCount})</span>
-        </div>
+        {salon.reviewCount > 0 ? (
+          <div className="flex items-center gap-1.5 text-sm">
+            <Star className="size-3.5 fill-primary text-primary" />
+            <span className="font-medium text-foreground">{salon.rating}</span>
+            <span className="text-muted-foreground">({salon.reviewCount})</span>
+          </div>
+        ) : (
+          <span className="text-sm text-muted-foreground">New on On It!</span>
+        )}
 
         <div className="flex flex-wrap gap-1.5 pt-1">
           {salon.categories.slice(0, 2).map((c) => {

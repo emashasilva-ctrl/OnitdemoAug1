@@ -246,7 +246,7 @@ export default async function BeautyLandingPage() {
             instant bookings.
           </p>
           <Button asChild size="lg" variant="secondary" className="mt-1">
-            <Link href="/beauty/partner">
+            <Link href="/become-a-vendor">
               List Your Salon
               <ArrowRight className="size-4" />
             </Link>

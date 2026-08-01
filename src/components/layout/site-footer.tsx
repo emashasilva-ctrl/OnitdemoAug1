@@ -27,7 +27,7 @@ export function SiteFooter() {
                 </Link>
               </li>
               <li>
-                <Link href="/beauty/partner" className="text-sm text-muted-foreground hover:text-foreground">
+                <Link href="/become-a-vendor" className="text-sm text-muted-foreground hover:text-foreground">
                   List Your Salon
                 </Link>
               </li>

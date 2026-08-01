@@ -8,7 +8,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "",
     "/beauty",
     "/beauty/salons",
-    "/beauty/partner",
     "/bookings",
     "/privacy",
     "/terms",

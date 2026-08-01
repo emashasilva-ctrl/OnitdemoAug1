@@ -26,8 +26,8 @@ export default async function BecomeAVendorPage() {
         </h1>
         <p className="mt-2 text-muted-foreground">
           Switch on vendor access for your existing On It! account — no new
-          login required. You&apos;ll be able to manage a salon listing from
-          the same account you use to book.
+          login required. You&apos;ll be taken straight to setting up your
+          salon listing.
         </p>
       </div>
 
@@ -36,14 +36,6 @@ export default async function BecomeAVendorPage() {
           Yes, become a vendor
         </Button>
       </form>
-
-      <p className="text-sm text-muted-foreground">
-        Don&apos;t have a salon listed yet? Once you&apos;re a vendor, you can{" "}
-        <a href="/beauty/partner" className="text-primary hover:underline">
-          list your salon
-        </a>
-        .
-      </p>
     </div>
   );
 }

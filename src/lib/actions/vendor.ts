@@ -1,11 +1,19 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { verifySession } from "@/lib/dal";
 import { categories } from "@/lib/data/categories";
+import { AMENITIES } from "@/lib/data/amenities";
 import { hasInvalidOrOverlappingRanges } from "@/lib/time";
+import { slugify } from "@/lib/slug";
 import type { CategorySlug } from "@/lib/types";
+
+// Colombo city-center fallback — there's no map picker yet, so every
+// self-serve-created salon starts pinned here until that's built.
+const DEFAULT_LAT = 6.9271;
+const DEFAULT_LNG = 79.8612;
 
 export type VendorActionResult = { success: true } | { success: false; error: string };
 
@@ -30,6 +38,90 @@ export async function revalidateVendorAndPublic(kind: "salon", slug: string) {
   revalidatePath(`/beauty/salons/${slug}`);
   revalidatePath("/beauty/salons");
   revalidatePath("/beauty");
+}
+
+// ---- Salon creation (self-serve setup) ----
+
+async function generateUniqueSlug(name: string): Promise<string> {
+  const base = slugify(name) || "salon";
+  let slug = base;
+  let suffix = 2;
+  while (await prisma.salon.findUnique({ where: { slug }, select: { id: true } })) {
+    slug = `${base}-${suffix}`;
+    suffix += 1;
+  }
+  return slug;
+}
+
+export interface CreateSalonInput {
+  name: string;
+  tagline: string;
+  area: string;
+  address: string;
+  phone: string;
+  priceLevel: 1 | 2 | 3;
+  categories: CategorySlug[];
+  about: string;
+  amenities: string[];
+}
+
+export async function createSalon(input: CreateSalonInput): Promise<VendorActionResult> {
+  const session = await verifySession();
+  if (!session) return { success: false, error: "You must be logged in." };
+
+  const user = await prisma.user.findUnique({ where: { id: session.userId } });
+  if (!user?.isVendor) return { success: false, error: "You must be a vendor to set up a salon." };
+
+  const existing = await prisma.salon.findFirst({ where: { ownerId: session.userId } });
+  if (existing) return { success: false, error: "You already have a salon set up." };
+
+  if (!input.name.trim() || !input.tagline.trim() || !input.area.trim() || !input.address.trim() || !input.phone.trim()) {
+    return { success: false, error: "Please fill in every field." };
+  }
+  if (input.categories.length === 0) {
+    return { success: false, error: "Pick at least one category." };
+  }
+  const validCategorySlugs = new Set(categories.map((c) => c.slug));
+  if (!input.categories.every((c) => validCategorySlugs.has(c))) {
+    return { success: false, error: "Invalid category." };
+  }
+  const validAmenities = new Set<string>(AMENITIES);
+  if (!input.amenities.every((a) => validAmenities.has(a))) {
+    return { success: false, error: "Invalid amenity." };
+  }
+  if (![1, 2, 3].includes(input.priceLevel)) {
+    return { success: false, error: "Invalid price level." };
+  }
+
+  const slug = await generateUniqueSlug(input.name);
+
+  await prisma.salon.create({
+    data: {
+      slug,
+      ownerId: session.userId,
+      name: input.name.trim(),
+      tagline: input.tagline.trim(),
+      area: input.area.trim(),
+      address: input.address.trim(),
+      lat: DEFAULT_LAT,
+      lng: DEFAULT_LNG,
+      categories: JSON.stringify(input.categories),
+      rating: 0,
+      reviewCount: 0,
+      priceLevel: input.priceLevel,
+      imageSeed: slug,
+      gallerySeeds: JSON.stringify([`${slug}-a`, `${slug}-b`, `${slug}-c`]),
+      about: input.about.trim(),
+      amenities: JSON.stringify(input.amenities),
+      featured: false,
+      phone: input.phone.trim(),
+    },
+  });
+
+  revalidatePath("/vendor/dashboard");
+  revalidatePath("/beauty/salons");
+  revalidatePath("/beauty");
+  redirect("/vendor/services");
 }
 
 // ---- Venue categories (salon) ----
