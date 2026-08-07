@@ -12,6 +12,11 @@
   "prisma": {
     "seed": "tsx prisma/seed.ts"
   },
+  "overrides": {
+    "@prisma/adapter-libsql": {
+      "@libsql/client": "0.17.4"
+    }
+  },
   "dependencies": {
     "@libsql/client": "^0.17.4",
     "@prisma/adapter-libsql": "^6.19.3",
