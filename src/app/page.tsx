@@ -4,6 +4,10 @@ import { HeroSearch } from "@/components/home/hero-search";
 import { QuickServicesGrid } from "@/components/home/quick-services-grid";
 import { getAllSalons, getCategoryStartingPrices } from "@/lib/data/salons";
 
+// See src/app/sitemap.ts for why: build-time prerendering has no reliable
+// access to the Turso env vars, so this needs to run per-request instead.
+export const dynamic = "force-dynamic";
+
 export default async function Home() {
   const [salons, prices] = await Promise.all([
     getAllSalons(),

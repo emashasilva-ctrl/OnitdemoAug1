@@ -24,6 +24,10 @@ export const metadata: Metadata = {
     "Browse trusted Colombo salons, check real-time availability, and book instantly — pay at the salon.",
 };
 
+// See src/app/sitemap.ts for why: build-time prerendering has no reliable
+// access to the Turso env vars, so this needs to run per-request instead.
+export const dynamic = "force-dynamic";
+
 const TICKER_ITEMS = ["Real-Time Booking", "Hair & Nails", "Spa & Bridal", "No Booking Fees"];
 
 export default async function BeautyLandingPage() {

@@ -24,14 +24,6 @@ function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
-function FacebookIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 18 18" fill="#1877F2" {...props}>
-      <path d="M18 9a9 9 0 1 0-10.4 8.89v-6.29H5.31V9h2.29V7.02c0-2.26 1.35-3.51 3.41-3.51.99 0 2.02.18 2.02.18v2.22h-1.14c-1.12 0-1.47.7-1.47 1.41V9h2.5l-.4 2.6h-2.1v6.29A9 9 0 0 0 18 9Z" />
-    </svg>
-  );
-}
-
 export function OAuthButtons({ next }: { next?: string }) {
   const nextParam = next ? `?next=${encodeURIComponent(next)}` : "";
 
@@ -42,20 +34,12 @@ export function OAuthButtons({ next }: { next?: string }) {
         <span className="text-xs text-muted-foreground">or continue with</span>
         <Separator className="flex-1" />
       </div>
-      <div className="grid grid-cols-2 gap-3">
-        <Button asChild variant="outline" size="lg">
-          <a href={`/api/auth/google${nextParam}`}>
-            <GoogleIcon className="size-4" />
-            Google
-          </a>
-        </Button>
-        <Button asChild variant="outline" size="lg">
-          <a href={`/api/auth/facebook${nextParam}`}>
-            <FacebookIcon className="size-4" />
-            Facebook
-          </a>
-        </Button>
-      </div>
+      <Button asChild variant="outline" size="lg">
+        <a href={`/api/auth/google${nextParam}`}>
+          <GoogleIcon className="size-4" />
+          Google
+        </a>
+      </Button>
     </div>
   );
 }
