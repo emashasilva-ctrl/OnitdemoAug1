@@ -1,6 +1,6 @@
 import "server-only";
 import { PrismaClient } from "@prisma/client";
-import { PrismaLibSql } from "@prisma/adapter-libsql";
+import { PrismaLibSQL } from "@prisma/adapter-libsql";
 
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 
@@ -9,7 +9,7 @@ const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 // Turso instead via the libSQL driver adapter — same schema, hosted database.
 function createPrismaClient(): PrismaClient {
   if (process.env.TURSO_DATABASE_URL) {
-    const adapter = new PrismaLibSql({
+    const adapter = new PrismaLibSQL({
       url: process.env.TURSO_DATABASE_URL,
       authToken: process.env.TURSO_AUTH_TOKEN,
     });
