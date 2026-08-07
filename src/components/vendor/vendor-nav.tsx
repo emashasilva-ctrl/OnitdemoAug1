@@ -14,6 +14,8 @@ const BASE_NAV_LINKS = [
 const PROMOTIONS_LINK = { label: "Promotions", href: "/vendor/promotions" };
 const TEAM_LINK = { label: "Team", href: "/vendor/team" };
 const CLIENTS_LINK = { label: "Clients", href: "/vendor/clients" };
+const BILLS_LINK = { label: "Bills", href: "/vendor/bills" };
+const PROFILE_LINK = { label: "Salon Profile", href: "/vendor/profile" };
 
 export function VendorNav({
   servicesLabel,
@@ -23,7 +25,14 @@ export function VendorNav({
   kind: "salon";
 }) {
   const pathname = usePathname();
-  const navLinks = [...BASE_NAV_LINKS, PROMOTIONS_LINK, TEAM_LINK, CLIENTS_LINK];
+  const navLinks = [
+    ...BASE_NAV_LINKS,
+    PROMOTIONS_LINK,
+    TEAM_LINK,
+    CLIENTS_LINK,
+    BILLS_LINK,
+    PROFILE_LINK,
+  ];
 
   return (
     <nav className="flex items-center gap-1 border-b border-border" aria-label="Vendor">

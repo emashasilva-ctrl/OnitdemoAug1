@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/db";
-import { minutesToLabel } from "@/lib/time";
+import { minutesToLabel, toLocalISODate } from "@/lib/time";
 
 export interface TimeSlot {
   minutes: number;
@@ -37,7 +37,7 @@ async function computeSlots(
   });
 
   const now = new Date();
-  const isToday = dateISO === now.toISOString().slice(0, 10);
+  const isToday = dateISO === toLocalISODate(now);
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
 
   const slots: TimeSlot[] = [];

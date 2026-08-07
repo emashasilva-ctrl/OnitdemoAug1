@@ -3,14 +3,18 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { requireUser, verifySession } from "@/lib/dal";
+import { computePrice, type PricingRuleRow } from "@/lib/pricing";
+import { sendEmail } from "@/lib/email";
+import { bookingConfirmationEmail } from "@/lib/email-templates";
 import type { AppointmentRecord } from "@/lib/types";
 
 export type BookingActionResult = { success: true } | { success: false; error: string };
 
+const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
 export async function createSalonBooking(input: {
   salonId: string;
   serviceId: string;
-  priceLKR: number;
   durationMins: number;
   date: string;
   time: string;
@@ -21,6 +25,37 @@ export async function createSalonBooking(input: {
 }): Promise<BookingActionResult> {
   const session = await verifySession();
   if (!session) return { success: false, error: "You must be logged in to book." };
+
+  const service = await prisma.service.findUnique({ where: { id: input.serviceId } });
+  if (!service || service.salonId !== input.salonId) {
+    return { success: false, error: "Service not found." };
+  }
+
+  const rules = await prisma.pricingRule.findMany({
+    where: { salonId: input.salonId, enabled: true },
+    include: { services: { select: { id: true } } },
+  });
+  const ruleRows: PricingRuleRow[] = rules.map((r) => ({
+    id: r.id,
+    label: r.label,
+    type: r.type,
+    amountType: r.amountType,
+    amount: r.amount,
+    days: JSON.parse(r.days) as string[],
+    startMinutes: r.startMinutes,
+    endMinutes: r.endMinutes,
+    enabled: r.enabled,
+    appliesToAllServices: r.appliesToAllServices,
+    serviceIds: r.services.map((s) => s.id),
+  }));
+
+  const dayLabel = DAY_LABELS[new Date(`${input.date}T00:00:00`).getDay()];
+  const breakdown = computePrice(service.priceLKR, service.id, ruleRows, dayLabel, input.startMinutes);
+
+  const salon = await prisma.salon.findUnique({
+    where: { id: input.salonId },
+    select: { name: true },
+  });
 
   await prisma.appointment.create({
     data: {
@@ -36,9 +71,29 @@ export async function createSalonBooking(input: {
       salonId: input.salonId,
       serviceId: input.serviceId,
       durationMins: input.durationMins,
-      priceLKR: input.priceLKR,
+      priceLKR: breakdown.finalPriceLKR,
+      basePriceLKR: breakdown.basePriceLKR,
+      appliedRuleLabel: breakdown.appliedRule?.label ?? null,
     },
   });
+
+  const customer = await prisma.user.findUnique({
+    where: { id: session.userId },
+    select: { email: true },
+  });
+  if (customer?.email && salon) {
+    await sendEmail({
+      to: customer.email,
+      ...bookingConfirmationEmail({
+        customerName: input.customerName,
+        salonName: salon.name,
+        serviceName: service.name,
+        date: input.date,
+        time: input.time,
+        priceLKR: breakdown.finalPriceLKR,
+      }),
+    });
+  }
 
   revalidatePath("/bookings");
   return { success: true };
@@ -48,16 +103,37 @@ export async function cancelAppointmentAction(id: string): Promise<BookingAction
   const session = await verifySession();
   if (!session) return { success: false, error: "You must be logged in." };
 
+  const appointment = await prisma.appointment.findUnique({
+    where: { id },
+    select: {
+      customerId: true,
+      priceLKR: true,
+      salon: { select: { cancellationFeeEnabled: true, cancellationFeePercent: true } },
+    },
+  });
+  if (!appointment || appointment.customerId !== session.userId) {
+    return { success: false, error: "Booking not found." };
+  }
+
+  const feeLKR =
+    appointment.salon?.cancellationFeeEnabled && appointment.priceLKR
+      ? Math.round((appointment.priceLKR * appointment.salon.cancellationFeePercent) / 100)
+      : null;
+
   await prisma.appointment.updateMany({
     where: { id, customerId: session.userId },
-    data: { status: "CANCELLED" },
+    data: { status: "CANCELLED", cancellationFeeLKR: feeLKR },
   });
 
   revalidatePath("/bookings");
   return { success: true };
 }
 
-export type AppointmentListItem = AppointmentRecord & { venueSlug: string | null };
+export type AppointmentListItem = AppointmentRecord & {
+  venueSlug: string | null;
+  cancellationFeeEnabled: boolean;
+  cancellationFeePercent: number;
+};
 
 export async function getMyAppointments(): Promise<AppointmentListItem[]> {
   const user = await requireUser("/bookings");
@@ -84,7 +160,12 @@ export async function getMyAppointments(): Promise<AppointmentListItem[]> {
     serviceId: row.serviceId!,
     serviceName: row.service!.name,
     priceLKR: row.priceLKR!,
+    basePriceLKR: row.basePriceLKR,
+    appliedRuleLabel: row.appliedRuleLabel,
+    cancellationFeeLKR: row.cancellationFeeLKR,
     durationMins: row.durationMins!,
     venueSlug: row.salon?.slug ?? null,
+    cancellationFeeEnabled: row.salon?.cancellationFeeEnabled ?? false,
+    cancellationFeePercent: row.salon?.cancellationFeePercent ?? 0,
   }));
 }

@@ -1,7 +1,6 @@
 import { getCurrentUser } from "@/lib/dal";
 import { getVendorVenue } from "@/lib/data/vendor";
 import { ServiceList } from "@/components/vendor/service-list";
-import { SalonCategoriesEditor } from "@/components/vendor/salon-categories-editor";
 import { MioSalonEmbedEditor } from "@/components/vendor/mio-salon-embed-editor";
 
 export default async function VendorServicesPage() {
@@ -13,7 +12,6 @@ export default async function VendorServicesPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <SalonCategoriesEditor salonId={vendorVenue.venue.id} initial={vendorVenue.venue.categories} />
       <MioSalonEmbedEditor
         salonId={vendorVenue.venue.id}
         initial={vendorVenue.venue.mioSalonEmbedCode}

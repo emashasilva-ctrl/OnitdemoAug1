@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { OAuthButtons } from "@/components/auth/oauth-buttons";
 import { signup, type AuthFormState } from "@/lib/actions/auth";
 
 const initialState: AuthFormState = {};
@@ -13,6 +14,9 @@ type AccountType = "customer" | "vendor";
 export function SignupForm({ next }: { next?: string }) {
   const [state, formAction, pending] = useActionState(signup, initialState);
   const [accountType, setAccountType] = useState<AccountType>("customer");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const passwordsMismatch = confirmPassword.length > 0 && password !== confirmPassword;
 
   return (
     <form
@@ -90,12 +94,32 @@ export function SignupForm({ next }: { next?: string }) {
           required
           autoComplete="new-password"
           placeholder="At least 8 characters"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
         />
       </div>
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="signup-confirm-password">Confirm password</Label>
+        <Input
+          id="signup-confirm-password"
+          name="confirmPassword"
+          type="password"
+          required
+          autoComplete="new-password"
+          placeholder="Re-enter your password"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          aria-invalid={passwordsMismatch}
+        />
+        {passwordsMismatch && (
+          <p className="text-sm text-destructive">Passwords do not match.</p>
+        )}
+      </div>
       {state.error && <p className="text-sm text-destructive">{state.error}</p>}
-      <Button type="submit" size="lg" disabled={pending} className="w-full">
+      <Button type="submit" size="lg" disabled={pending || passwordsMismatch} className="w-full">
         {pending ? "Creating account…" : "Create account"}
       </Button>
+      <OAuthButtons next={next} />
     </form>
   );
 }

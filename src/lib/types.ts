@@ -46,6 +46,23 @@ export interface Promotion {
   endDate: string | null;
 }
 
+export type PricingRuleType = "DISCOUNT" | "SURCHARGE";
+export type PricingRuleAmountType = "PERCENT" | "FLAT";
+
+export interface PricingRule {
+  id: string;
+  label: string;
+  type: PricingRuleType;
+  amountType: PricingRuleAmountType;
+  amount: number;
+  days: string[];
+  startMinutes: number;
+  endMinutes: number;
+  appliesToAllServices: boolean;
+  serviceIds: string[];
+  enabled: boolean;
+}
+
 export interface Salon {
   id: string;
   slug: string;
@@ -61,14 +78,22 @@ export interface Salon {
   priceLevel: 1 | 2 | 3;
   imageSeed: string;
   gallerySeeds: string[];
+  coverImage: string | null;
+  galleryImages: string[];
   about: string;
   amenities: string[];
   services: Service[];
   openHours: OpenHours[];
   reviews: Review[];
   activePromotions: Promotion[];
+  pricingRules: PricingRule[];
+  cancellationFeeEnabled: boolean;
+  cancellationFeePercent: number;
+  noShowFeeEnabled: boolean;
+  noShowFeePercent: number;
   featured: boolean;
   phone: string;
+  whatsappNumber: string | null;
   mioSalonEmbedCode: string | null;
 }
 
@@ -80,7 +105,7 @@ interface AppointmentBase {
   customerPhone: string;
   notes?: string;
   createdAt: string;
-  status: "upcoming" | "cancelled" | "completed";
+  status: "upcoming" | "checked_in" | "no_show" | "cancelled" | "completed";
 }
 
 export interface SalonBookingRecord extends AppointmentBase {
@@ -91,6 +116,9 @@ export interface SalonBookingRecord extends AppointmentBase {
   serviceId: string;
   serviceName: string;
   priceLKR: number;
+  basePriceLKR: number | null;
+  appliedRuleLabel: string | null;
+  cancellationFeeLKR: number | null;
   durationMins: number;
 }
 

@@ -1,15 +1,23 @@
 import { CategoryIcon } from "@/components/category-icon";
 import { gradientForSeed } from "@/lib/gradient";
+import { cn } from "@/lib/utils";
 
 export function VenueImage({
   seed,
+  src,
   icon = "Sparkles",
   className,
 }: {
   seed: string;
+  src?: string | null;
   icon?: string;
   className?: string;
 }) {
+  if (src) {
+    // eslint-disable-next-line @next/next/no-img-element -- data URLs aren't optimizable by next/image
+    return <img src={src} alt="" className={cn("object-cover", className)} />;
+  }
+
   const { from, to, angle } = gradientForSeed(seed);
 
   return (

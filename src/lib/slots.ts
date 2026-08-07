@@ -47,7 +47,11 @@ export function getSlotsForDate(
   const rand = mulberry32(hashSeed(`${venueId}:${dateISO}:${durationMins}`));
   const slots: TimeSlot[] = [];
 
-  const isToday = dateISO === now.toISOString().slice(0, 10);
+  const nowISO = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, "0")}-${now
+    .getDate()
+    .toString()
+    .padStart(2, "0")}`;
+  const isToday = dateISO === nowISO;
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
 
   for (

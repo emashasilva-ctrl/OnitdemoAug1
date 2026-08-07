@@ -5,5 +5,5 @@ export const AMENITIES = [
   "Valet parking",
   "Free parking",
   "Private treatment rooms",
-  "On-location available",
+  "Cash only",
 ] as const;

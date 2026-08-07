@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { getSalonByOwnerId } from "@/lib/data/salons";
 import { toLocalISODate } from "@/lib/time";
 import type { Salon } from "@/lib/types";
+import type { BillLineItem } from "@/lib/billing";
 
 // A discriminated union of one for now — a future vertical (e.g. fitness)
 // adds its own `{ kind: "fitness"; venue: FitnessStudio }` member here, the
@@ -110,7 +111,7 @@ export interface VendorCalendarAppointment {
   customerPhone: string;
   notes: string | null;
   isManual: boolean;
-  status: "UPCOMING" | "CANCELLED" | "COMPLETED";
+  status: "UPCOMING" | "CHECKED_IN" | "NO_SHOW" | "CANCELLED" | "COMPLETED";
   label: string;
   teamMemberId: string | null;
 }
@@ -172,4 +173,135 @@ export async function getTeamMemberHours(teamMemberId: string): Promise<RawOpenH
   return rows
     .map((r) => ({ id: r.id, day: r.day, openMinutes: r.openMinutes, closeMinutes: r.closeMinutes }))
     .sort((a, b) => DAY_ORDER.indexOf(a.day) - DAY_ORDER.indexOf(b.day));
+}
+
+export interface VendorTodayAppointment {
+  id: string;
+  time: string;
+  startMinutes: number;
+  customerName: string;
+  customerPhone: string;
+  notes: string | null;
+  isManual: boolean;
+  label: string;
+  status: "UPCOMING" | "CHECKED_IN" | "NO_SHOW" | "COMPLETED";
+  priceLKR: number | null;
+  basePriceLKR: number | null;
+  appliedRuleLabel: string | null;
+  billId: string | null;
+}
+
+export interface VendorTodaySections {
+  upcoming: VendorTodayAppointment[];
+  previous: VendorTodayAppointment[];
+}
+
+export async function getTodayAppointmentsForVenue(
+  kind: "salon",
+  venueId: string
+): Promise<VendorTodaySections> {
+  const now = new Date();
+  const todayISO = toLocalISODate(now);
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+
+  const rows = await prisma.appointment.findMany({
+    where: { salonId: venueId, date: todayISO, status: { not: "CANCELLED" } },
+    include: { service: true, bill: { select: { id: true } } },
+    orderBy: [{ startMinutes: "asc" }],
+  });
+
+  const upcoming: VendorTodayAppointment[] = [];
+  const previous: VendorTodayAppointment[] = [];
+
+  for (const row of rows) {
+    const item: VendorTodayAppointment = {
+      id: row.id,
+      time: row.time,
+      startMinutes: row.startMinutes,
+      customerName: row.customerName,
+      customerPhone: row.customerPhone,
+      notes: row.notes,
+      isManual: row.isManual,
+      label: row.service?.name ?? "Appointment",
+      status: row.status as VendorTodayAppointment["status"],
+      priceLKR: row.priceLKR,
+      basePriceLKR: row.basePriceLKR,
+      appliedRuleLabel: row.appliedRuleLabel,
+      billId: row.bill?.id ?? null,
+    };
+    (row.startMinutes > nowMinutes ? upcoming : previous).push(item);
+  }
+
+  return { upcoming, previous };
+}
+
+export interface VendorBillListItem {
+  id: string;
+  createdAt: string;
+  customerName: string;
+  serviceLabel: string;
+  appointmentDate: string;
+  totalLKR: number;
+  emailSentAt: string | null;
+  whatsappSentAt: string | null;
+}
+
+export async function getBillsForSalon(salonId: string): Promise<VendorBillListItem[]> {
+  const rows = await prisma.bill.findMany({
+    where: { salonId },
+    include: { appointment: { include: { service: true } } },
+    orderBy: { createdAt: "desc" },
+  });
+  return rows.map((r) => ({
+    id: r.id,
+    createdAt: r.createdAt.toISOString(),
+    customerName: r.customerName,
+    serviceLabel: r.appointment.service?.name ?? "Appointment",
+    appointmentDate: r.appointment.date,
+    totalLKR: r.totalLKR,
+    emailSentAt: r.emailSentAt?.toISOString() ?? null,
+    whatsappSentAt: r.whatsappSentAt?.toISOString() ?? null,
+  }));
+}
+
+export interface VendorBillDetail {
+  id: string;
+  appointmentId: string;
+  customerName: string;
+  customerPhone: string;
+  customerEmail: string | null;
+  lineItems: BillLineItem[];
+  totalLKR: number;
+  createdAt: string;
+  emailSentAt: string | null;
+  whatsappSentAt: string | null;
+  appointmentDate: string;
+  appointmentTime: string;
+  serviceLabel: string;
+}
+
+export async function getBillById(
+  billId: string,
+  salonId: string
+): Promise<VendorBillDetail | null> {
+  const row = await prisma.bill.findFirst({
+    where: { id: billId, salonId },
+    include: { appointment: { include: { service: true } } },
+  });
+  if (!row) return null;
+  return {
+    id: row.id,
+    appointmentId: row.appointmentId,
+    customerName: row.customerName,
+    customerPhone: row.customerPhone,
+    customerEmail: row.customerEmail,
+    lineItems: JSON.parse(row.lineItems) as BillLineItem[],
+    totalLKR: row.totalLKR,
+    createdAt: row.createdAt.toISOString(),
+    emailSentAt: row.emailSentAt?.toISOString() ?? null,
+    whatsappSentAt: row.whatsappSentAt?.toISOString() ?? null,
+    appointmentDate: row.appointment.date,
+    appointmentTime: row.appointment.time,
+    serviceLabel: row.appointment.service?.name ?? "Appointment",
+  };
 }

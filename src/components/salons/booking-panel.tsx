@@ -27,10 +27,43 @@ import {
 import { getSalonAvailability, type TimeSlot } from "@/lib/actions/availability";
 import { createSalonBooking } from "@/lib/actions/bookings";
 import { buildDateOptions } from "@/lib/time";
+import { computePrice, type PriceBreakdown } from "@/lib/pricing";
 import type { Salon, Service } from "@/lib/types";
 
 type Step = "service" | "datetime" | "details" | "success";
 type CurrentUser = { name: string; phone: string | null } | null;
+
+const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+function PriceLine({ breakdown }: { breakdown: PriceBreakdown }) {
+  if (!breakdown.appliedRule) {
+    return (
+      <p className="mt-1 font-medium text-foreground">
+        LKR {breakdown.finalPriceLKR.toLocaleString()} &middot; pay at salon
+      </p>
+    );
+  }
+
+  const { appliedRule } = breakdown;
+  const sign = appliedRule.type === "DISCOUNT" ? "−" : "+";
+  const amountLabel =
+    appliedRule.amountType === "PERCENT" ? `${appliedRule.amount}%` : `LKR ${appliedRule.amount.toLocaleString()}`;
+
+  return (
+    <p className="mt-1 font-medium text-foreground">
+      <span className="mr-2 text-muted-foreground line-through">
+        LKR {breakdown.basePriceLKR.toLocaleString()}
+      </span>
+      LKR {breakdown.finalPriceLKR.toLocaleString()} &middot; pay at salon
+      <span
+        className={`ml-1.5 text-xs font-normal ${appliedRule.type === "DISCOUNT" ? "text-primary" : "text-destructive"}`}
+      >
+        ({sign}
+        {amountLabel} &middot; {appliedRule.label})
+      </span>
+    </p>
+  );
+}
 
 export function BookingPanel({
   salon,
@@ -56,9 +89,16 @@ export function BookingPanel({
     service: Service;
     date: string;
     time: string;
+    breakdown: PriceBreakdown;
   } | null>(null);
 
   const selectedService = salon.services.find((s) => s.id === serviceId) ?? null;
+  const selectedSlot = time ? (slots.find((s) => s.label === time) ?? null) : null;
+  const priceBreakdown = useMemo<PriceBreakdown | null>(() => {
+    if (!selectedService || !selectedSlot) return null;
+    const dayLabel = DAY_LABELS[new Date(`${date}T00:00:00`).getDay()];
+    return computePrice(selectedService.priceLKR, selectedService.id, salon.pricingRules, dayLabel, selectedSlot.minutes);
+  }, [selectedService, selectedSlot, date, salon.pricingRules]);
 
   async function loadSlots(serviceForCheck: Service, dateForCheck: string) {
     setTime(null);
@@ -104,20 +144,17 @@ export function BookingPanel({
   }
 
   async function handleConfirm() {
-    if (!selectedService || !time || !name || !phone) return;
+    if (!selectedService || !time || !name || !phone || !selectedSlot || !priceBreakdown) return;
     const dateLabel = dateOptions.find((d) => d.iso === date)?.label ?? date;
-    const slot = slots.find((s) => s.label === time);
-    if (!slot) return;
 
     setSubmitting(true);
     const result = await createSalonBooking({
       salonId: salon.id,
       serviceId: selectedService.id,
-      priceLKR: selectedService.priceLKR,
       durationMins: selectedService.durationMins,
       date,
       time,
-      startMinutes: slot.minutes,
+      startMinutes: selectedSlot.minutes,
       customerName: name,
       customerPhone: phone,
       notes: notes || undefined,
@@ -129,7 +166,7 @@ export function BookingPanel({
       return;
     }
 
-    setLastBookingSummary({ service: selectedService, date: dateLabel, time });
+    setLastBookingSummary({ service: selectedService, date: dateLabel, time, breakdown: priceBreakdown });
     setStep("success");
     toast.success("Booking confirmed", {
       description: `${selectedService.name} on ${dateLabel} at ${time}`,
@@ -359,10 +396,14 @@ export function BookingPanel({
                   {dateOptions.find((d) => d.iso === date)?.label} at {time} &middot;{" "}
                   {salon.name}
                 </p>
-                <p className="mt-1 font-medium text-foreground">
-                  LKR {selectedService.priceLKR.toLocaleString()} &middot; pay at salon
-                </p>
+                {priceBreakdown && <PriceLine breakdown={priceBreakdown} />}
               </div>
+
+              {salon.cancellationFeeEnabled && (
+                <p className="text-xs text-muted-foreground">
+                  Cancelling this booking may incur a {salon.cancellationFeePercent}% cancellation fee.
+                </p>
+              )}
 
               {!currentUser ? (
                 <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border p-6 text-center">
@@ -459,10 +500,7 @@ export function BookingPanel({
                 <p className="text-muted-foreground">
                   {lastBookingSummary.date} at {lastBookingSummary.time}
                 </p>
-                <p className="mt-1 font-medium text-foreground">
-                  LKR {lastBookingSummary.service.priceLKR.toLocaleString()} &middot; pay
-                  at salon
-                </p>
+                <PriceLine breakdown={lastBookingSummary.breakdown} />
               </div>
               <div className="flex w-full flex-col gap-2 sm:flex-row">
                 <Button

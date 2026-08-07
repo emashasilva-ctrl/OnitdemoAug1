@@ -6,6 +6,8 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { createSession, deleteSession } from "@/lib/session";
 import { verifySession } from "@/lib/dal";
+import { sendEmail } from "@/lib/email";
+import { welcomeEmail } from "@/lib/email-templates";
 
 export interface AuthFormState {
   error?: string;
@@ -23,12 +25,14 @@ export async function signup(
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const phone = String(formData.get("phone") ?? "").trim();
   const password = String(formData.get("password") ?? "");
+  const confirmPassword = String(formData.get("confirmPassword") ?? "");
   const accountType = String(formData.get("accountType") ?? "customer");
   const next = String(formData.get("next") ?? "") || "/";
 
   if (!name) return { error: "Please enter your name." };
   if (!isValidEmail(email)) return { error: "Please enter a valid email address." };
   if (password.length < 8) return { error: "Password must be at least 8 characters." };
+  if (password !== confirmPassword) return { error: "Passwords do not match." };
 
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) return { error: "An account with that email already exists." };
@@ -43,6 +47,8 @@ export async function signup(
       isVendor: accountType === "vendor",
     },
   });
+
+  await sendEmail({ to: user.email, ...welcomeEmail({ name: user.name, isVendor: user.isVendor }) });
 
   await createSession(user.id);
   redirect(user.isVendor ? "/vendor/setup" : next);
@@ -61,7 +67,7 @@ export async function login(
   }
 
   const user = await prisma.user.findUnique({ where: { email } });
-  if (!user) return { error: "Incorrect email or password." };
+  if (!user || !user.passwordHash) return { error: "Incorrect email or password." };
 
   const valid = await bcrypt.compare(password, user.passwordHash);
   if (!valid) return { error: "Incorrect email or password." };

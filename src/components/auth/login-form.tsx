@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { OAuthButtons } from "@/components/auth/oauth-buttons";
 import { login, type AuthFormState } from "@/lib/actions/auth";
 
 const initialState: AuthFormState = {};
@@ -43,6 +44,7 @@ export function LoginForm({ next }: { next?: string }) {
       <Button type="submit" size="lg" disabled={pending} className="w-full">
         {pending ? "Logging in…" : "Log in"}
       </Button>
+      <OAuthButtons next={next} />
     </form>
   );
 }

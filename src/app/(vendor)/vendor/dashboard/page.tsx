@@ -1,12 +1,61 @@
-import { Calendar, Phone } from "lucide-react";
+import { Calendar, CalendarClock, Phone } from "lucide-react";
 import { getCurrentUser } from "@/lib/dal";
-import { getVendorVenue, getUpcomingAppointmentsForVenue, getTeamMembersForSalon } from "@/lib/data/vendor";
+import {
+  getVendorVenue,
+  getUpcomingAppointmentsForVenue,
+  getTodayAppointmentsForVenue,
+  getTeamMembersForSalon,
+  type VendorTodayAppointment,
+} from "@/lib/data/vendor";
 import { getSalonAnalytics } from "@/lib/data/vendor-analytics";
 import { toLocalISODate } from "@/lib/time";
 import { Badge } from "@/components/ui/badge";
 import { ManualBookingDialog } from "@/components/vendor/manual-booking-dialog";
 import { VendorCancelButton } from "@/components/vendor/vendor-cancel-button";
+import { TodayAppointmentActions } from "@/components/vendor/today-appointment-actions";
 import { DashboardAnalytics } from "@/components/vendor/dashboard-analytics";
+import type { Salon } from "@/lib/types";
+
+function TodayCard({
+  a,
+  kind,
+  venue,
+  showCancel,
+}: {
+  a: VendorTodayAppointment;
+  kind: "salon";
+  venue: Salon;
+  showCancel: boolean;
+}) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border bg-card p-4">
+      <div>
+        <div className="flex items-center gap-2">
+          <p className="font-medium text-foreground">{a.label}</p>
+          {a.isManual && <Badge variant="outline">Added manually</Badge>}
+        </div>
+        <p className="text-sm text-muted-foreground">
+          {a.time} &middot; {a.customerName}
+        </p>
+        {a.notes && <p className="mt-0.5 text-xs text-muted-foreground">{a.notes}</p>}
+      </div>
+      <div className="flex items-center gap-3">
+        <a
+          href={`tel:${a.customerPhone.replace(/\s/g, "")}`}
+          className="flex items-center gap-1.5 text-sm text-primary hover:underline"
+        >
+          <Phone className="size-3.5" />
+          {a.customerPhone}
+        </a>
+        {showCancel ? (
+          <VendorCancelButton id={a.id} kind={kind} venueId={venue.id} isManual={a.isManual} />
+        ) : (
+          <TodayAppointmentActions appointment={a} salon={venue} />
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default async function VendorDashboardPage() {
   const user = await getCurrentUser();
@@ -17,27 +66,64 @@ export default async function VendorDashboardPage() {
 
   const { kind, venue } = vendorVenue;
   const appointments = await getUpcomingAppointmentsForVenue(kind, venue.id);
+  const today = await getTodayAppointmentsForVenue(kind, venue.id);
   const teamMembers = await getTeamMembersForSalon(venue.id);
   const itemCount = venue.services.length;
 
   const todayISO = toLocalISODate(new Date());
   const analytics = await getSalonAnalytics(venue.id, "30d", todayISO);
+  const upcomingBeyondToday = appointments.filter((a) => a.date !== todayISO);
 
   return (
     <div className="flex flex-col gap-8">
       <div>
         <div className="flex items-center justify-between gap-2">
           <h2 className="flex items-center gap-2 font-heading text-lg font-semibold text-foreground">
-            <Calendar className="size-4" />
-            Upcoming bookings
+            <CalendarClock className="size-4" />
+            Today
           </h2>
           <ManualBookingDialog kind={kind} venue={venue} teamMembers={teamMembers} />
         </div>
-        {appointments.length === 0 ? (
+
+        <div className="mt-4 flex flex-col gap-5">
+          <div>
+            <h3 className="text-sm font-medium text-muted-foreground">Upcoming</h3>
+            {today.upcoming.length === 0 ? (
+              <p className="mt-2 text-sm text-muted-foreground">Nothing left to come today.</p>
+            ) : (
+              <div className="mt-2 flex flex-col gap-3">
+                {today.upcoming.map((a) => (
+                  <TodayCard key={a.id} a={a} kind={kind} venue={venue} showCancel />
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div>
+            <h3 className="text-sm font-medium text-muted-foreground">Previous</h3>
+            {today.previous.length === 0 ? (
+              <p className="mt-2 text-sm text-muted-foreground">No bookings due yet today.</p>
+            ) : (
+              <div className="mt-2 flex flex-col gap-3">
+                {today.previous.map((a) => (
+                  <TodayCard key={a.id} a={a} kind={kind} venue={venue} showCancel={false} />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <h2 className="flex items-center gap-2 font-heading text-lg font-semibold text-foreground">
+          <Calendar className="size-4" />
+          Upcoming bookings
+        </h2>
+        {upcomingBeyondToday.length === 0 ? (
           <p className="mt-3 text-sm text-muted-foreground">No upcoming bookings yet.</p>
         ) : (
           <div className="mt-4 flex flex-col gap-3">
-            {appointments.map((a) => (
+            {upcomingBeyondToday.map((a) => (
               <div
                 key={a.id}
                 className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border bg-card p-4"

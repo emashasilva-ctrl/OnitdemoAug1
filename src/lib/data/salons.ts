@@ -3,6 +3,7 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { groupOpenHoursByDay, toLocalISODate } from "@/lib/time";
 import { isPromotionActive } from "@/lib/data/promotions";
+import { categories } from "@/lib/data/categories";
 import type { CategorySlug, Salon } from "@/lib/types";
 
 const salonInclude = {
@@ -10,6 +11,7 @@ const salonInclude = {
   openHours: true,
   reviews: true,
   promotions: true,
+  pricingRules: { include: { services: { select: { id: true } } } },
 } satisfies Prisma.SalonInclude;
 
 type SalonRow = Prisma.SalonGetPayload<{ include: typeof salonInclude }>;
@@ -31,6 +33,8 @@ function mapSalon(row: SalonRow): Salon {
     priceLevel: row.priceLevel as 1 | 2 | 3,
     imageSeed: row.imageSeed,
     gallerySeeds: JSON.parse(row.gallerySeeds) as string[],
+    coverImage: row.coverImage,
+    galleryImages: row.galleryImages ? (JSON.parse(row.galleryImages) as string[]) : [],
     about: row.about,
     amenities: JSON.parse(row.amenities) as string[],
     services: row.services.map((s) => ({
@@ -58,8 +62,26 @@ function mapSalon(row: SalonRow): Salon {
         startDate: p.startDate,
         endDate: p.endDate,
       })),
+    pricingRules: row.pricingRules.map((r) => ({
+      id: r.id,
+      label: r.label,
+      type: r.type,
+      amountType: r.amountType,
+      amount: r.amount,
+      days: JSON.parse(r.days) as string[],
+      startMinutes: r.startMinutes,
+      endMinutes: r.endMinutes,
+      appliesToAllServices: r.appliesToAllServices,
+      serviceIds: r.services.map((s) => s.id),
+      enabled: r.enabled,
+    })),
+    cancellationFeeEnabled: row.cancellationFeeEnabled,
+    cancellationFeePercent: row.cancellationFeePercent,
+    noShowFeeEnabled: row.noShowFeeEnabled,
+    noShowFeePercent: row.noShowFeePercent,
     featured: row.featured,
     phone: row.phone,
+    whatsappNumber: row.whatsappNumber,
     mioSalonEmbedCode: row.mioSalonEmbedCode,
   };
 }
@@ -82,4 +104,24 @@ export async function getFeaturedSalons(): Promise<Salon[]> {
 export async function getSalonByOwnerId(ownerId: string): Promise<Salon | null> {
   const row = await prisma.salon.findFirst({ where: { ownerId }, include: salonInclude });
   return row ? mapSalon(row) : null;
+}
+
+// For each category, the cheapest service price across all salons that list
+// that category among their own — not a strict per-service category match,
+// since Service.category is a free-text label a vendor can customize.
+// null means no onboarded salon offers that category yet.
+export async function getCategoryStartingPrices(): Promise<
+  Record<CategorySlug, number | null>
+> {
+  const salons = await getAllSalons();
+  const result = {} as Record<CategorySlug, number | null>;
+
+  for (const category of categories) {
+    const prices = salons
+      .filter((s) => s.categories.includes(category.slug))
+      .flatMap((s) => s.services.map((service) => service.priceLKR));
+    result[category.slug] = prices.length > 0 ? Math.min(...prices) : null;
+  }
+
+  return result;
 }

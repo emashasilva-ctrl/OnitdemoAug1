@@ -37,14 +37,14 @@ export function MioSalonEmbedEditor({
       <div>
         <p className="font-heading font-semibold text-foreground">MioSalon booking widget</p>
         <p className="text-sm text-muted-foreground">
-          Paste your MioSalon branch&apos;s booking-link embed code to let customers book
-          through MioSalon instead of On It!&apos;s built-in booking. Leave blank to use On
-          It!&apos;s booking.
+          Paste your MioSalon branch&apos;s booking link (or a full embed snippet, if you have
+          one) to let customers book through MioSalon instead of On It!&apos;s built-in booking.
+          Leave blank to use On It!&apos;s booking.
         </p>
       </div>
       <Textarea
         rows={4}
-        placeholder="Paste your MioSalon embed code here…"
+        placeholder="https://booking.miosalon.com/your-salon or a full embed snippet…"
         value={value}
         onChange={(e) => setValue(e.target.value)}
         className="font-mono text-xs"

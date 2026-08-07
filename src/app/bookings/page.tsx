@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CancelButton } from "@/components/bookings/cancel-button";
 import { getMyAppointments, type AppointmentListItem } from "@/lib/actions/bookings";
+import { toLocalISODate } from "@/lib/time";
 
 function AppointmentCard({ appointment }: { appointment: AppointmentListItem }) {
   const viewHref = `/beauty/salons/${appointment.venueSlug}`;
@@ -31,6 +32,15 @@ function AppointmentCard({ appointment }: { appointment: AppointmentListItem }) 
         {appointment.status === "upcoming" && (
           <Badge variant="secondary">Upcoming</Badge>
         )}
+        {appointment.status === "checked_in" && (
+          <Badge variant="secondary">Checked in</Badge>
+        )}
+        {appointment.status === "no_show" && (
+          <Badge variant="destructive">No-show</Badge>
+        )}
+        {appointment.status === "completed" && (
+          <Badge variant="secondary">Completed</Badge>
+        )}
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-foreground/80">
@@ -38,8 +48,17 @@ function AppointmentCard({ appointment }: { appointment: AppointmentListItem }) 
           <Clock className="size-3.5" />
           {appointment.date} at {appointment.time}
         </span>
-        <span>LKR {appointment.priceLKR.toLocaleString()} &middot; pay at salon</span>
+        <span>
+          LKR {appointment.priceLKR.toLocaleString()} &middot; pay at salon
+          {appointment.appliedRuleLabel && ` · ${appointment.appliedRuleLabel}`}
+        </span>
       </div>
+
+      {appointment.status === "cancelled" && appointment.cancellationFeeLKR != null && (
+        <p className="mt-2 text-sm text-destructive">
+          Cancellation fee charged: LKR {appointment.cancellationFeeLKR.toLocaleString()}
+        </p>
+      )}
 
       {appointment.notes && (
         <p className="mt-2 text-sm text-muted-foreground">Note: {appointment.notes}</p>
@@ -51,7 +70,14 @@ function AppointmentCard({ appointment }: { appointment: AppointmentListItem }) 
             <Link href={viewHref}>View salon</Link>
           </Button>
         )}
-        {appointment.status === "upcoming" && <CancelButton id={appointment.id} />}
+        {appointment.status === "upcoming" && (
+          <CancelButton
+            id={appointment.id}
+            priceLKR={appointment.priceLKR}
+            cancellationFeeEnabled={appointment.cancellationFeeEnabled}
+            cancellationFeePercent={appointment.cancellationFeePercent}
+          />
+        )}
       </div>
     </div>
   );
@@ -60,12 +86,15 @@ function AppointmentCard({ appointment }: { appointment: AppointmentListItem }) 
 export default async function BookingsPage() {
   const appointments = await getMyAppointments();
 
-  const todayISO = new Date().toISOString().slice(0, 10);
+  const todayISO = toLocalISODate(new Date());
   const upcoming = appointments.filter(
-    (a) => a.status === "upcoming" && a.date >= todayISO
+    (a) =>
+      (a.status === "upcoming" || a.status === "checked_in") && a.date >= todayISO
   );
   const past = appointments.filter(
-    (a) => a.status !== "cancelled" && a.date < todayISO
+    (a) =>
+      a.status !== "cancelled" &&
+      (a.date < todayISO || a.status === "no_show" || a.status === "completed")
   );
   const cancelled = appointments.filter((a) => a.status === "cancelled");
 

@@ -1,27 +1,43 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Playfair_Display, Archivo_Black } from "next/font/google";
+import { Archivo_Black, Cormorant_Garamond, Fraunces, Jost } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
-import { SiteHeader } from "@/components/layout/site-header";
-import { SiteFooter } from "@/components/layout/site-footer";
+import { HomeNav } from "@/components/home/home-nav";
+import { MainContent } from "@/components/layout/main-content";
+import { HomeFooter } from "@/components/home/home-footer";
 import { getCurrentUser } from "@/lib/dal";
 import "./globals.css";
-
-const inter = Inter({
-  variable: "--font-sans",
-  subsets: ["latin"],
-  display: "swap",
-});
-
-const playfairDisplay = Playfair_Display({
-  variable: "--font-heading",
-  subsets: ["latin"],
-  display: "swap",
-});
 
 const archivoBlack = Archivo_Black({
   variable: "--font-display-black",
   subsets: ["latin"],
   weight: "400",
+  display: "swap",
+});
+
+// Site-wide typography — Jost/Fraunces are mapped to --font-sans/
+// --font-heading in globals.css's @theme block, so every existing font-sans/
+// font-heading usage (including salon names) picks these up automatically.
+// Cormorant Garamond stays available as --font-cormorant for the homepage
+// hero/logo, which intentionally keep their existing italic serif treatment.
+const cormorantGaramond = Cormorant_Garamond({
+  variable: "--font-cormorant",
+  subsets: ["latin"],
+  weight: ["400", "500", "700"],
+  style: ["normal", "italic"],
+  display: "swap",
+});
+
+const fraunces = Fraunces({
+  variable: "--font-fraunces",
+  subsets: ["latin"],
+  weight: ["500", "600"],
+  display: "swap",
+});
+
+const jost = Jost({
+  variable: "--font-jost",
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "700"],
   display: "swap",
 });
 
@@ -46,8 +62,8 @@ export const viewport: Viewport = {
   initialScale: 1,
   viewportFit: "cover",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#F7F8F9" },
-    { media: "(prefers-color-scheme: dark)", color: "#0F1416" },
+    { media: "(prefers-color-scheme: light)", color: "#F7F6F1" },
+    { media: "(prefers-color-scheme: dark)", color: "#121815" },
   ],
 };
 
@@ -61,12 +77,12 @@ export default async function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${playfairDisplay.variable} ${archivoBlack.variable} h-full antialiased`}
+      className={`${archivoBlack.variable} ${cormorantGaramond.variable} ${fraunces.variable} ${jost.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-background text-foreground">
-        <SiteHeader user={user} />
-        <main className="flex-1">{children}</main>
-        <SiteFooter />
+        <HomeNav user={user} />
+        <MainContent>{children}</MainContent>
+        <HomeFooter />
         <Toaster />
       </body>
     </html>

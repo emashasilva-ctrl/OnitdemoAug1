@@ -8,12 +8,20 @@ import { categories } from "@/lib/data/categories";
 import { AMENITIES } from "@/lib/data/amenities";
 import { hasInvalidOrOverlappingRanges } from "@/lib/time";
 import { slugify } from "@/lib/slug";
+import { isValidIntlPhone } from "@/lib/phone";
 import type { CategorySlug } from "@/lib/types";
 
-// Colombo city-center fallback — there's no map picker yet, so every
-// self-serve-created salon starts pinned here until that's built.
+// Colombo city-center fallback — used when a vendor never picks a
+// suggestion from the address autocomplete (they can still free-type an
+// address without one).
 const DEFAULT_LAT = 6.9271;
 const DEFAULT_LNG = 79.8612;
+
+function isValidLatLng(lat: number, lng: number): boolean {
+  return (
+    Number.isFinite(lat) && Number.isFinite(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180
+  );
+}
 
 export type VendorActionResult = { success: true } | { success: false; error: string };
 
@@ -58,7 +66,10 @@ export interface CreateSalonInput {
   tagline: string;
   area: string;
   address: string;
+  lat?: number;
+  lng?: number;
   phone: string;
+  whatsappNumber: string;
   priceLevel: 1 | 2 | 3;
   categories: CategorySlug[];
   about: string;
@@ -75,8 +86,21 @@ export async function createSalon(input: CreateSalonInput): Promise<VendorAction
   const existing = await prisma.salon.findFirst({ where: { ownerId: session.userId } });
   if (existing) return { success: false, error: "You already have a salon set up." };
 
-  if (!input.name.trim() || !input.tagline.trim() || !input.area.trim() || !input.address.trim() || !input.phone.trim()) {
+  if (
+    !input.name.trim() ||
+    !input.tagline.trim() ||
+    !input.area.trim() ||
+    !input.address.trim() ||
+    !input.phone.trim() ||
+    !input.whatsappNumber.trim()
+  ) {
     return { success: false, error: "Please fill in every field." };
+  }
+  if (!isValidIntlPhone(input.phone)) {
+    return { success: false, error: "Mobile number must start with a country code, e.g. +94 123456789." };
+  }
+  if (!isValidIntlPhone(input.whatsappNumber)) {
+    return { success: false, error: "WhatsApp number must start with a country code, e.g. +94 123456789." };
   }
   if (input.categories.length === 0) {
     return { success: false, error: "Pick at least one category." };
@@ -92,6 +116,12 @@ export async function createSalon(input: CreateSalonInput): Promise<VendorAction
   if (![1, 2, 3].includes(input.priceLevel)) {
     return { success: false, error: "Invalid price level." };
   }
+  if (
+    (input.lat !== undefined || input.lng !== undefined) &&
+    !isValidLatLng(input.lat ?? NaN, input.lng ?? NaN)
+  ) {
+    return { success: false, error: "Invalid location." };
+  }
 
   const slug = await generateUniqueSlug(input.name);
 
@@ -103,8 +133,8 @@ export async function createSalon(input: CreateSalonInput): Promise<VendorAction
       tagline: input.tagline.trim(),
       area: input.area.trim(),
       address: input.address.trim(),
-      lat: DEFAULT_LAT,
-      lng: DEFAULT_LNG,
+      lat: input.lat ?? DEFAULT_LAT,
+      lng: input.lng ?? DEFAULT_LNG,
       categories: JSON.stringify(input.categories),
       rating: 0,
       reviewCount: 0,
@@ -115,6 +145,7 @@ export async function createSalon(input: CreateSalonInput): Promise<VendorAction
       amenities: JSON.stringify(input.amenities),
       featured: false,
       phone: input.phone.trim(),
+      whatsappNumber: input.whatsappNumber.trim(),
     },
   });
 
@@ -122,6 +153,121 @@ export async function createSalon(input: CreateSalonInput): Promise<VendorAction
   revalidatePath("/beauty/salons");
   revalidatePath("/beauty");
   redirect("/vendor/services");
+}
+
+// ---- Salon profile (post-setup editing of the core details) ----
+
+export interface UpdateSalonProfileInput {
+  name: string;
+  tagline: string;
+  area: string;
+  address: string;
+  lat?: number;
+  lng?: number;
+  phone: string;
+  whatsappNumber: string;
+  priceLevel: 1 | 2 | 3;
+  about: string;
+  amenities: string[];
+}
+
+export async function updateSalonProfile(
+  salonId: string,
+  input: UpdateSalonProfileInput
+): Promise<VendorActionResult> {
+  const check = await requireOwnedSalon(salonId);
+  if (!check.ok) return { success: false, error: check.error };
+
+  if (
+    !input.name.trim() ||
+    !input.tagline.trim() ||
+    !input.area.trim() ||
+    !input.address.trim() ||
+    !input.phone.trim() ||
+    !input.whatsappNumber.trim() ||
+    !input.about.trim()
+  ) {
+    return { success: false, error: "Please fill in every field." };
+  }
+  if (!isValidIntlPhone(input.phone)) {
+    return { success: false, error: "Mobile number must start with a country code, e.g. +94 123456789." };
+  }
+  if (!isValidIntlPhone(input.whatsappNumber)) {
+    return { success: false, error: "WhatsApp number must start with a country code, e.g. +94 123456789." };
+  }
+  const validAmenities = new Set<string>(AMENITIES);
+  if (!input.amenities.every((a) => validAmenities.has(a))) {
+    return { success: false, error: "Invalid amenity." };
+  }
+  if (![1, 2, 3].includes(input.priceLevel)) {
+    return { success: false, error: "Invalid price level." };
+  }
+  if (
+    (input.lat !== undefined || input.lng !== undefined) &&
+    !isValidLatLng(input.lat ?? NaN, input.lng ?? NaN)
+  ) {
+    return { success: false, error: "Invalid location." };
+  }
+
+  await prisma.salon.update({
+    where: { id: salonId },
+    data: {
+      name: input.name.trim(),
+      tagline: input.tagline.trim(),
+      area: input.area.trim(),
+      address: input.address.trim(),
+      ...(input.lat !== undefined && input.lng !== undefined ? { lat: input.lat, lng: input.lng } : {}),
+      phone: input.phone.trim(),
+      whatsappNumber: input.whatsappNumber.trim(),
+      priceLevel: input.priceLevel,
+      about: input.about.trim(),
+      amenities: JSON.stringify(input.amenities),
+    },
+  });
+  await revalidateVendorAndPublic("salon", check.salon.slug);
+  return { success: true };
+}
+
+// ---- Salon photos ----
+
+const MAX_IMAGE_DATA_URL_LENGTH = 3_000_000; // ~2.2MB raw, well above what client-side compression produces
+const MAX_GALLERY_IMAGES = 6;
+
+function isValidImageDataUrl(value: string): boolean {
+  return value.startsWith("data:image/") && value.length <= MAX_IMAGE_DATA_URL_LENGTH;
+}
+
+export interface UpdateSalonPhotosInput {
+  coverImage: string | null;
+  galleryImages: string[];
+}
+
+export async function updateSalonPhotos(
+  salonId: string,
+  input: UpdateSalonPhotosInput
+): Promise<VendorActionResult> {
+  const check = await requireOwnedSalon(salonId);
+  if (!check.ok) return { success: false, error: check.error };
+
+  if (input.coverImage && !isValidImageDataUrl(input.coverImage)) {
+    return { success: false, error: "Cover photo is invalid or too large." };
+  }
+  if (input.galleryImages.length > MAX_GALLERY_IMAGES) {
+    return { success: false, error: `You can upload up to ${MAX_GALLERY_IMAGES} gallery photos.` };
+  }
+  if (!input.galleryImages.every(isValidImageDataUrl)) {
+    return { success: false, error: "One of the gallery photos is invalid or too large." };
+  }
+
+  await prisma.salon.update({
+    where: { id: salonId },
+    data: {
+      coverImage: input.coverImage,
+      galleryImages: JSON.stringify(input.galleryImages),
+    },
+  });
+  await revalidateVendorAndPublic("salon", check.salon.slug);
+  return { success: true };
 }
 
 // ---- Venue categories (salon) ----
@@ -160,9 +306,16 @@ export async function updateMioSalonEmbedCode(
   const trimmed = embedCode.trim();
   // Deliberately light validation, not full HTML sanitization: vendors are a
   // semi-trusted onboarded party, this just guards against pasting something
-  // unrelated. If MioSalon's snippet ever changes shape, adjust this check.
-  if (trimmed && !trimmed.toLowerCase().includes("miosalon")) {
-    return { success: false, error: "That doesn't look like a MioSalon embed code." };
+  // unrelated. Structural, not brand-name-based — MioSalon's actual embed
+  // snippets route through their welns.io booking domain, not a "miosalon"
+  // string, so a literal brand-name check rejects real snippets.
+  const looksLikeEmbed = /<iframe|<script/i.test(trimmed);
+  const looksLikeUrl = /^https?:\/\/\S+$/i.test(trimmed);
+  if (trimmed && !looksLikeEmbed && !looksLikeUrl) {
+    return {
+      success: false,
+      error: "That doesn't look like a booking link or embed code.",
+    };
   }
 
   await prisma.salon.update({

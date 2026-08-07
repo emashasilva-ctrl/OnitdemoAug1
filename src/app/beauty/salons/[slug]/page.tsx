@@ -1,8 +1,9 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { Star, MapPin, Phone, Clock, Check, Megaphone } from "lucide-react";
+import { Star, MapPin, Phone, Clock, Check, Megaphone, MessageCircle } from "lucide-react";
 import { BookingPanel } from "@/components/salons/booking-panel";
 import { MioSalonBookingEmbed } from "@/components/salons/mio-salon-booking-embed";
+import { WhatsAppChatBubble } from "@/components/salons/whatsapp-chat-bubble";
 import { CategoryIcon } from "@/components/category-icon";
 import { VenueImage } from "@/components/venue-image";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +11,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { getCategory } from "@/lib/data/categories";
 import { getSalonBySlug } from "@/lib/data/salons";
 import { getCurrentUser } from "@/lib/dal";
+import { toWhatsAppDigits } from "@/lib/phone";
 
 export async function generateMetadata(
   props: PageProps<"/beauty/salons/[slug]">
@@ -40,6 +42,7 @@ export default async function SalonDetailPage(
         <div className="relative col-span-2 aspect-4/3 overflow-hidden rounded-2xl bg-muted sm:aspect-16/9 lg:aspect-auto lg:row-span-2">
           <VenueImage
             seed={salon.imageSeed}
+            src={salon.coverImage}
             icon={getCategory(salon.categories[0])?.icon}
             className="size-full"
           />
@@ -51,6 +54,7 @@ export default async function SalonDetailPage(
           >
             <VenueImage
               seed={seed}
+              src={salon.galleryImages[i]}
               icon={getCategory(salon.categories[i + 1] ?? salon.categories[0])?.icon}
               className="size-full"
             />
@@ -138,7 +142,7 @@ export default async function SalonDetailPage(
               </h2>
               <div className="mt-4">
                 {salon.mioSalonEmbedCode ? (
-                  <MioSalonBookingEmbed embedCode={salon.mioSalonEmbedCode} />
+                  <MioSalonBookingEmbed embedCode={salon.mioSalonEmbedCode} salonName={salon.name} />
                 ) : (
                   <BookingPanel salon={salon} currentUser={currentUser} />
                 )}
@@ -207,6 +211,17 @@ export default async function SalonDetailPage(
                 <Phone className="size-4" />
                 {salon.phone}
               </a>
+              {salon.whatsappNumber && (
+                <a
+                  href={`https://wa.me/${toWhatsAppDigits(salon.whatsappNumber)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-2 flex items-center gap-2 text-sm text-primary hover:underline"
+                >
+                  <MessageCircle className="size-4" />
+                  Chat on WhatsApp
+                </a>
+              )}
               <div className="mt-4 flex flex-col gap-1.5 border-t border-border pt-4 text-sm">
                 {salon.openHours.map((oh) => (
                   <div key={oh.day} className="flex items-center justify-between">
@@ -222,6 +237,9 @@ export default async function SalonDetailPage(
           </div>
         </div>
       </div>
+      {salon.whatsappNumber && (
+        <WhatsAppChatBubble whatsappNumber={salon.whatsappNumber} salonName={salon.name} />
+      )}
     </div>
   );
 }

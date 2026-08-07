@@ -1,134 +1,102 @@
 import Link from "next/link";
-import {
-  ArrowRight,
-  CalendarCheck,
-  ShieldCheck,
-  Sparkles,
-} from "lucide-react";
-import {
-  DoodleLeaf,
-  DoodlePalm,
-  DoodleSparkle,
-  DoodleSwirl,
-  DoodleWave,
-} from "@/components/doodles";
-import { Marquee } from "@/components/marquee";
-import { PhotoCarousel } from "@/components/photo-carousel";
-import { Button } from "@/components/ui/button";
-import { homePhotos } from "@/lib/carousel-photos";
+import { VideoCarousel } from "@/components/home/video-carousel";
+import { HeroSearch } from "@/components/home/hero-search";
+import { QuickServicesGrid } from "@/components/home/quick-services-grid";
+import { getAllSalons, getCategoryStartingPrices } from "@/lib/data/salons";
 
-const TICKER_ITEMS = [
-  "Real-Time Booking",
-  "Salons Across Colombo",
-  "No Booking Fees",
-  "Book In Seconds",
-];
+export default async function Home() {
+  const [salons, prices] = await Promise.all([
+    getAllSalons(),
+    getCategoryStartingPrices(),
+  ]);
+  const areas = Array.from(new Set(salons.map((s) => s.area))).sort();
 
-export default function Home() {
   return (
     <>
-      {/* Hero */}
-      <section className="relative flex min-h-[820px] flex-col overflow-hidden">
-        <PhotoCarousel photos={homePhotos} />
-        <Marquee items={TICKER_ITEMS} />
-
-        <DoodleLeaf className="pointer-events-none absolute left-[6%] top-24 z-10 hidden size-12 -rotate-8 text-lime sm:block" />
-        <DoodlePalm className="pointer-events-none absolute bottom-24 left-[4%] z-10 hidden size-16 rotate-3 text-sky sm:block" />
-        <DoodleWave className="pointer-events-none absolute right-[8%] top-60 z-10 hidden size-20 text-lime sm:block" />
-        <DoodleSparkle className="pointer-events-none absolute right-[7%] top-24 z-10 hidden size-9 rotate-6 text-sky sm:block" />
-        <DoodleSparkle className="pointer-events-none absolute right-[13%] bottom-32 z-10 hidden size-6 text-lime sm:block" />
-
-        <div className="relative z-10 flex flex-1 flex-col items-center justify-center gap-6 px-4 py-16 text-center sm:px-6">
-          <h1 className="max-w-3xl text-balance font-display-black text-4xl leading-[0.98] tracking-tight text-white uppercase sm:text-6xl lg:text-7xl">
-            Colombo&apos;s
-            <br />
-            Concierge<span className="text-primary">.</span>
-            <br />
-            On Demand.
+      <VideoCarousel>
+        <div className="text-center">
+          <span className="mb-10 block text-[13px] tracking-[0.5em] text-sand/90 uppercase">
+            Consider it done
+          </span>
+          <h1
+            className="mx-auto mb-10 max-w-[1000px] font-cormorant text-[clamp(58px,8.4vw,128px)] leading-[1.04] text-sand italic"
+            style={{ textShadow: "0 2px 30px rgba(0,0,0,.35)" }}
+          >
+            Whatever you need, <span className="not-italic">we&apos;re on it</span>
           </h1>
-          <p className="max-w-md text-balance text-lg text-white/85">
-            One account, real-time booking for the best salons across the
-            city.
-          </p>
-          <div className="mt-1 flex flex-wrap items-center justify-center gap-3">
-            <Link
-              href="/beauty"
-              className="rounded-full bg-primary px-7 py-4 text-sm font-bold tracking-wide text-primary-foreground uppercase transition-transform hover:scale-[1.03]"
+          <div className="flex items-center justify-center gap-6">
+            <div className="h-px w-16 flex-none bg-sand/50" />
+            <p
+              className="max-w-[520px] font-jost text-[19px] leading-[1.5] text-sand/95"
+              style={{ textShadow: "0 1px 15px rgba(0,0,0,.3)" }}
             >
-              Explore Beauty
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* How it works */}
-      <section id="how-it-works" className="border-y border-border bg-secondary/30">
-        <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
-          <div className="mb-10 text-center">
-            <h2 className="flex items-center justify-center gap-2 font-heading text-2xl font-semibold text-foreground sm:text-3xl">
-              How On It! works
-              <DoodleSparkle className="size-5 text-primary/60" />
-            </h2>
-            <p className="mt-2 text-muted-foreground">
-              Booking a salon in Colombo, made simple.
+              Beauty, wellness and lifestyle services, arranged around your day.
             </p>
+            <div className="h-px w-16 flex-none bg-sand/50" />
           </div>
 
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
+          <HeroSearch areas={areas} />
+        </div>
+      </VideoCarousel>
+
+      <QuickServicesGrid prices={prices} />
+
+      <section id="how" className="border-b border-teal px-8 py-22">
+        <div className="mx-auto max-w-[1280px]">
+          <span className="mb-11 block text-[10px] tracking-[0.26em] text-deep-blue uppercase">
+            How it works
+          </span>
+          <div className="grid grid-cols-1 gap-16 sm:grid-cols-3">
             {[
               {
-                icon: Sparkles,
+                n: "01",
                 title: "Browse salons",
-                body: "Explore the best salons across Colombo, all in one place.",
+                body: "Explore the island's best salons and studios, gathered in one place with the details that actually matter.",
               },
               {
-                icon: CalendarCheck,
+                n: "02",
                 title: "Book in real time",
-                body: "See live availability and reserve the exact slot that suits you.",
+                body: "See live availability and hold the exact slot that suits your day — no messaging back and forth.",
               },
               {
-                icon: ShieldCheck,
+                n: "03",
                 title: "Show up",
-                body: "Pay at the salon — no booking fees, no card on file.",
+                body: "Pay at the salon. No booking fees, no card kept on file, nothing to settle in advance.",
               },
-            ].map((step, i) => (
-              <div
-                key={step.title}
-                className="relative flex flex-col gap-3 rounded-2xl border border-border bg-card p-6"
-              >
-                <span className="flex size-11 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-                  <step.icon className="size-5" />
-                </span>
-                <span className="absolute top-6 right-6 font-heading text-2xl font-semibold text-muted-foreground/30">
-                  {i + 1}
-                </span>
-                <h3 className="font-heading text-lg font-semibold text-foreground">
-                  {step.title}
-                </h3>
-                <p className="text-sm text-muted-foreground">{step.body}</p>
+            ].map((step) => (
+              <div key={step.n} className="flex flex-col gap-4.5 border-t border-teal pt-5.5">
+                <span className="font-cormorant text-[34px] text-coral italic">{step.n}</span>
+                <h3 className="font-cormorant text-2xl text-sage-deep">{step.title}</h3>
+                <p className="max-w-[34ch] text-[15px] leading-[1.75] text-sage-deep/70">
+                  {step.body}
+                </p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Partner CTA */}
-      <section className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
-        <div className="flex flex-col items-center gap-6 rounded-3xl bg-foreground px-6 py-12 text-center sm:px-16">
-          <DoodleSwirl className="size-16 text-background/40" />
-          <h2 className="max-w-md font-heading text-2xl font-semibold text-balance text-background sm:text-3xl">
-            Own a salon in Colombo?
-          </h2>
-          <p className="max-w-md text-balance text-background/70">
-            List with On It! for free and start taking real-time bookings.
-          </p>
-          <div className="mt-1 flex flex-col gap-3 sm:flex-row">
-            <Button asChild size="lg" variant="secondary">
-              <Link href="/become-a-vendor">
-                List Your Salon
-                <ArrowRight className="size-4" />
-              </Link>
-            </Button>
+      <section id="for-salons" className="px-8 pt-20 pb-24">
+        <div className="mx-auto grid max-w-[1280px] grid-cols-1 gap-16 border-t border-teal pt-14 sm:grid-cols-[1.2fr_1fr] sm:items-end">
+          <div className="flex flex-col gap-5">
+            <span className="text-[10px] tracking-[0.26em] text-deep-blue uppercase">
+              For salons &amp; practitioners
+            </span>
+            <h2 className="font-cormorant text-[clamp(30px,3.4vw,46px)] leading-[1.15] text-sage-deep italic">
+              Own a salon or practice on the island?
+            </h2>
+          </div>
+          <div className="flex flex-col items-start gap-6">
+            <p className="max-w-[40ch] text-[15px] leading-[1.75] text-sage-deep/70">
+              List with On It! at no cost and start taking real-time bookings from
+              guests already looking for you.
+            </p>
+            <Link
+              href="/become-a-vendor"
+              className="border-b border-teal pb-2 text-[11px] tracking-[0.28em] text-deep-blue uppercase transition-colors hover:border-deep-blue"
+            >
+              List your salon
+            </Link>
           </div>
         </div>
       </section>

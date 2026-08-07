@@ -5,12 +5,19 @@ import { VenueImage } from "@/components/venue-image";
 import { getSlotsForDate, nextAvailableLabel } from "@/lib/slots";
 import { getCategory } from "@/lib/data/categories";
 import { Badge } from "@/components/ui/badge";
+import { toLocalISODate } from "@/lib/time";
 
-export function SalonCard({ salon }: { salon: Salon }) {
+export function SalonCard({
+  salon,
+  distanceLabel,
+}: {
+  salon: Salon;
+  distanceLabel?: string;
+}) {
   const shortestService = [...salon.services].sort(
     (a, b) => a.durationMins - b.durationMins
   )[0];
-  const todayISO = new Date().toISOString().slice(0, 10);
+  const todayISO = toLocalISODate(new Date());
   const slots = shortestService
     ? getSlotsForDate(salon.id, shortestService.durationMins, todayISO)
     : [];
@@ -24,6 +31,7 @@ export function SalonCard({ salon }: { salon: Salon }) {
       <div className="relative aspect-4/3 w-full overflow-hidden bg-muted">
         <VenueImage
           seed={salon.imageSeed}
+          src={salon.coverImage}
           icon={getCategory(salon.categories[0])?.icon}
           className="size-full transition-transform duration-300 group-hover:scale-105"
         />
@@ -44,7 +52,10 @@ export function SalonCard({ salon }: { salon: Salon }) {
           </span>
         </div>
 
-        <p className="text-sm text-muted-foreground">{salon.area}</p>
+        <p className="text-sm text-muted-foreground">
+          {salon.area}
+          {distanceLabel ? ` · ${distanceLabel}` : ""}
+        </p>
 
         {salon.reviewCount > 0 ? (
           <div className="flex items-center gap-1.5 text-sm">

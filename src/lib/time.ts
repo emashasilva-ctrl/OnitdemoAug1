@@ -1,3 +1,5 @@
+export const DAYS_OF_WEEK = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
+
 export function minutesToLabel(minutes: number): string {
   const h24 = Math.floor(minutes / 60);
   const m = minutes % 60;
