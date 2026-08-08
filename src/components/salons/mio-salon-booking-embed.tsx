@@ -130,7 +130,7 @@ export function MioSalonBookingEmbed({
     return (
       <div className="flex flex-col items-center gap-3 rounded-2xl border border-border bg-card p-8 text-center">
         <p className="text-sm text-muted-foreground">
-          This salon takes bookings through MioSalon.
+          This salon takes bookings through an external booking system.
         </p>
         <a
           href={trimmed}
@@ -138,7 +138,7 @@ export function MioSalonBookingEmbed({
           rel="noopener noreferrer"
           className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
         >
-          Book on MioSalon
+          Book now
           <ExternalLink className="size-4" />
         </a>
       </div>
@@ -149,7 +149,7 @@ export function MioSalonBookingEmbed({
     <>
       <div className="flex flex-col items-center gap-3 rounded-2xl border border-border bg-card p-8 text-center">
         <p className="text-sm text-muted-foreground">
-          This salon takes bookings through MioSalon.
+          This salon takes bookings through an external booking system.
         </p>
         <Button onClick={() => setOpen(true)} className="rounded-full px-6">
           <Calendar className="size-4" />
@@ -161,7 +161,7 @@ export function MioSalonBookingEmbed({
         <DialogContent className="max-h-[88vh] overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>Book with {salonName}</DialogTitle>
-            <DialogDescription>Powered by MioSalon</DialogDescription>
+            <DialogDescription>External booking</DialogDescription>
           </DialogHeader>
           <div dangerouslySetInnerHTML={{ __html: markup }} />
           <div ref={containerRef} />

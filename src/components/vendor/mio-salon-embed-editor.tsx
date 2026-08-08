@@ -26,7 +26,7 @@ export function MioSalonEmbedEditor({
       toast.error(result.error);
       return;
     }
-    toast.success("MioSalon booking widget updated");
+    toast.success("External booking widget updated");
     router.refresh();
   }
 
@@ -35,16 +35,16 @@ export function MioSalonEmbedEditor({
   return (
     <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4">
       <div>
-        <p className="font-heading font-semibold text-foreground">MioSalon booking widget</p>
+        <p className="font-heading font-semibold text-foreground">External booking widget</p>
         <p className="text-sm text-muted-foreground">
-          Paste your MioSalon branch&apos;s booking link (or a full embed snippet, if you have
-          one) to let customers book through MioSalon instead of On It!&apos;s built-in booking.
+          Paste your external booking system&apos;s link (or a full embed snippet, if you have
+          one) to let customers book through it instead of On It!&apos;s built-in booking.
           Leave blank to use On It!&apos;s booking.
         </p>
       </div>
       <Textarea
         rows={4}
-        placeholder="https://booking.miosalon.com/your-salon or a full embed snippet…"
+        placeholder="https://booking.example.com/your-salon or a full embed snippet…"
         value={value}
         onChange={(e) => setValue(e.target.value)}
         className="font-mono text-xs"
