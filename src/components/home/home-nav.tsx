@@ -30,11 +30,13 @@ export function HomeNav({ user }: { user: CurrentUser }) {
   useEffect(() => {
     function onScroll() {
       const sentinel = document.getElementById(HERO_SENTINEL_ID);
-      // A sentinel at the hero's bottom edge, not IntersectionObserver — a
-      // hero taller than the viewport reports `isIntersecting: false` at
-      // scroll 0 and would lock the nav in its "scrolled" state permanently.
-      // No sentinel means this page has no hero to be transparent over — stay solid.
-      const isScrolled = sentinel ? sentinel.getBoundingClientRect().top <= 82 : true;
+      // No sentinel means this page has no hero to be transparent over — stay
+      // solid. Where there is one, the nav should only stay transparent right
+      // at the very top, overlaying the hero image — turn solid as soon as
+      // the user scrolls at all, rather than waiting for the whole hero to
+      // pass, which left it transparent (and overlapping) over the content
+      // below the hero for a full viewport height of scrolling.
+      const isScrolled = sentinel ? window.scrollY > 10 : true;
       setScrolled((prev) => (prev === isScrolled ? prev : isScrolled));
     }
     window.addEventListener("scroll", onScroll, { passive: true });

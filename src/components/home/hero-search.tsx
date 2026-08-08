@@ -29,15 +29,15 @@ export function HeroSearch({ areas }: { areas: string[] }) {
 
   return (
     <>
-      <div className="mx-auto mt-12 grid max-w-[840px] grid-cols-1 items-stretch gap-2 rounded-full bg-sand/96 p-[10px] pl-2 shadow-[0_24px_60px_rgba(0,0,0,.28)] sm:grid-cols-[1.15fr_1fr_auto]">
-        <label className="flex flex-col gap-1.5 border-b border-sage-deep/14 px-6 py-2 text-left sm:border-r sm:border-b-0">
+      <div className="mx-auto mt-12 grid max-w-[840px] grid-cols-1 items-stretch gap-1 rounded-[32px] bg-sand/96 p-[10px] shadow-[0_24px_60px_rgba(0,0,0,.28)] sm:grid-cols-[1.15fr_1fr_auto] sm:gap-2 sm:rounded-full sm:pl-2">
+        <label className="flex flex-col items-center gap-1 border-b border-sage-deep/14 px-6 py-1.5 text-center sm:items-start sm:border-r sm:border-b-0 sm:py-2 sm:text-left">
           <span className="text-[9px] uppercase tracking-[0.22em] text-sage-deep/55">
             What do you need
           </span>
           <select
             value={service}
             onChange={(e) => setService(e.target.value as CategorySlug)}
-            className="appearance-none border-none bg-transparent p-0 font-jost text-[15px] text-sage-deep outline-none"
+            className="appearance-none border-none bg-transparent p-0 text-center font-jost text-[15px] text-sage-deep outline-none sm:text-left"
           >
             {categories.map((c) => (
               <option key={c.slug} value={c.slug}>
@@ -47,7 +47,7 @@ export function HeroSearch({ areas }: { areas: string[] }) {
           </select>
         </label>
 
-        <label className="relative flex flex-col gap-1.5 px-5 py-2 text-left">
+        <label className="relative flex flex-col items-center gap-1 px-5 py-1.5 text-center sm:items-start sm:py-2 sm:text-left">
           <span className="text-[9px] uppercase tracking-[0.22em] text-sage-deep/55">Where</span>
           <input
             value={location}
@@ -55,7 +55,7 @@ export function HeroSearch({ areas }: { areas: string[] }) {
             onFocus={() => setLocationFocused(true)}
             onBlur={() => setTimeout(() => setLocationFocused(false), 150)}
             placeholder="Colombo neighbourhood"
-            className="w-full border-none bg-transparent p-0 font-jost text-[15px] text-sage-deep outline-none placeholder:text-sage-deep/40"
+            className="w-full border-none bg-transparent p-0 text-center font-jost text-[15px] text-sage-deep outline-none placeholder:text-sage-deep/40 sm:text-left"
           />
           {showSuggestions && (
             <div className="absolute top-full right-[-12px] left-0 z-[60] max-h-[236px] overflow-auto bg-sand py-1.5 shadow-[0_20px_44px_rgba(0,0,0,.22)]">
@@ -78,7 +78,7 @@ export function HeroSearch({ areas }: { areas: string[] }) {
 
         <button
           onClick={handleFind}
-          className="mx-auto w-fit self-auto rounded-full bg-sage-deep px-9 py-3 font-jost text-[11px] tracking-[0.24em] text-sand uppercase transition-opacity hover:opacity-85 sm:mx-0 sm:w-auto sm:self-stretch sm:py-0"
+          className="mx-auto mt-0.5 w-fit self-auto rounded-full bg-sage-deep px-9 py-2.5 font-jost text-[11px] tracking-[0.24em] text-sand uppercase transition-opacity hover:opacity-85 sm:mx-0 sm:mt-0 sm:w-auto sm:self-stretch sm:py-0"
         >
           Find
         </button>
