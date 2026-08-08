@@ -85,13 +85,12 @@ export function HomeNav({ user }: { user: CurrentUser }) {
 
         {user ? (
           <div className={`hidden items-center gap-3 sm:flex ${navText}`}>
-            {user.isVendor ? (
-              <Link href="/vendor/profile" className="text-sm hover:underline">
-                Hi, {user.name.split(" ")[0]}
-              </Link>
-            ) : (
-              <span className="text-sm">Hi, {user.name.split(" ")[0]}</span>
-            )}
+            <Link
+              href={user.isVendor ? "/vendor/profile" : "/account"}
+              className="text-sm hover:underline"
+            >
+              Hi, {user.name.split(" ")[0]}
+            </Link>
             <Link
               href={user.isVendor ? "/vendor/dashboard" : "/become-a-vendor"}
               className={`rounded-full border px-5 py-2 text-[10px] uppercase tracking-[0.2em] transition-opacity hover:opacity-75 ${pillBorder}`}
@@ -157,18 +156,14 @@ export function HomeNav({ user }: { user: CurrentUser }) {
             <div className="mt-2 flex flex-col gap-2 border-t border-border px-4 pt-4">
               {user ? (
                 <>
-                  {user.isVendor ? (
-                    <SheetClose asChild>
-                      <Link
-                        href="/vendor/profile"
-                        className="rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-muted"
-                      >
-                        Signed in as {user.name}
-                      </Link>
-                    </SheetClose>
-                  ) : (
-                    <p className="px-3 text-sm text-muted-foreground">Signed in as {user.name}</p>
-                  )}
+                  <SheetClose asChild>
+                    <Link
+                      href={user.isVendor ? "/vendor/profile" : "/account"}
+                      className="rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-muted"
+                    >
+                      Signed in as {user.name}
+                    </Link>
+                  </SheetClose>
                   <SheetClose asChild>
                     <Link
                       href={user.isVendor ? "/vendor/dashboard" : "/become-a-vendor"}
