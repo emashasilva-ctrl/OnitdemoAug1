@@ -8,6 +8,7 @@ import { createSession, deleteSession } from "@/lib/session";
 import { verifySession } from "@/lib/dal";
 import { sendEmail } from "@/lib/email";
 import { welcomeEmail } from "@/lib/email-templates";
+import { sanitizeNextPath } from "@/lib/oauth";
 
 export interface AuthFormState {
   error?: string;
@@ -97,4 +98,16 @@ export async function becomeVendor() {
 
   revalidatePath("/", "layout");
   redirect("/vendor/setup");
+}
+
+// The other half of the account-type choice on /become-a-vendor — no DB
+// write needed since isVendor already defaults to false, this just sends
+// the user on to wherever they were headed (falling back to home if that
+// was /become-a-vendor itself, to avoid looping back into the same choice).
+export async function continueAsCustomer(formData: FormData) {
+  const session = await verifySession();
+  if (!session) redirect("/login");
+
+  const next = sanitizeNextPath(String(formData.get("next") ?? ""));
+  redirect(next === "/become-a-vendor" ? "/" : next);
 }

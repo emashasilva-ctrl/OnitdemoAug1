@@ -28,8 +28,14 @@ export async function GET(request: NextRequest) {
 
   try {
     const identity = await fetchFacebookIdentity(code);
-    const user = await findOrCreateOAuthUser("facebook", identity);
+    const { user, isNew } = await findOrCreateOAuthUser("facebook", identity);
     await createSession(user.id);
+
+    if (isNew) {
+      const chooserUrl = new URL("/become-a-vendor", request.url);
+      chooserUrl.searchParams.set("next", next);
+      return NextResponse.redirect(chooserUrl);
+    }
 
     if (user.isVendor) {
       const ownedSalon = await prisma.salon.findFirst({

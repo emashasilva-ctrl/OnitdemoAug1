@@ -186,7 +186,7 @@ export async function findOrCreateOAuthUser(provider: OAuthProvider, identity: O
         ? { googleId: identity.providerId }
         : { facebookId: identity.providerId },
   });
-  if (existingByProvider) return existingByProvider;
+  if (existingByProvider) return { user: existingByProvider, isNew: false };
 
   const providerIdData = provider === "google"
     ? { googleId: identity.providerId }
@@ -194,10 +194,11 @@ export async function findOrCreateOAuthUser(provider: OAuthProvider, identity: O
 
   const existingByEmail = await prisma.user.findUnique({ where: { email: identity.email } });
   if (existingByEmail) {
-    return prisma.user.update({
+    const user = await prisma.user.update({
       where: { id: existingByEmail.id },
       data: providerIdData,
     });
+    return { user, isNew: false };
   }
 
   const user = await prisma.user.create({
@@ -209,5 +210,5 @@ export async function findOrCreateOAuthUser(provider: OAuthProvider, identity: O
     },
   });
   await sendEmail({ to: user.email, ...welcomeEmail({ name: user.name, isVendor: user.isVendor }) });
-  return user;
+  return { user, isNew: true };
 }

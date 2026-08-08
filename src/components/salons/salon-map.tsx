@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { APIProvider, Map, Marker, InfoWindow, useMap, useMarkerRef } from "@vis.gl/react-google-maps";
 import type { Salon } from "@/lib/types";
@@ -21,11 +21,39 @@ const USER_LOCATION_ICON =
     '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"><circle cx="10" cy="10" r="7" fill="#4285F4" stroke="white" stroke-width="3"/></svg>'
   );
 
-// `defaultCenter`/`defaultZoom` on <Map> only apply to the initial paint —
-// they don't react to prop changes, so without this the camera would stay
-// wherever it started even as filters change which salons are shown. Fits
-// the viewport to whatever's currently on the map (filtered salons + the
-// user's own location pin, if present) every time that set changes.
+function pointsFor(salons: Salon[], userLocation?: Coordinates | null): Coordinates[] {
+  const points: Coordinates[] = salons.map((s) => ({ lat: s.lat, lng: s.lng }));
+  if (userLocation) points.push(userLocation);
+  return points;
+}
+
+// A plain {north,south,east,west} literal — not a google.maps.LatLngBounds
+// instance, so this can run before the Maps script (and the `google`
+// global) has loaded, unlike everything else in this file. Used to size
+// the map's very first paint natively via <Map defaultBounds>, instead of
+// racing a manual map.fitBounds() call against the library's own initial
+// idle/projection setup in an effect (that race left the map stuck with no
+// tiles ever rendering — bounds computed up front avoids it entirely).
+function boundsLiteralFor(points: Coordinates[]) {
+  if (points.length < 2) return undefined;
+  let north = points[0].lat;
+  let south = points[0].lat;
+  let east = points[0].lng;
+  let west = points[0].lng;
+  for (const p of points) {
+    north = Math.max(north, p.lat);
+    south = Math.min(south, p.lat);
+    east = Math.max(east, p.lng);
+    west = Math.min(west, p.lng);
+  }
+  return { north, south, east, west, padding: 48 };
+}
+
+// `defaultBounds`/`defaultCenter`/`defaultZoom` on <Map> only apply to the
+// initial paint — they don't react to prop changes, so without this the
+// camera would stay wherever it started even as filters change which
+// salons are shown. Re-fits the viewport whenever the visible set changes
+// after that first paint (which <Map defaultBounds> already handled).
 function FitBoundsToSalons({
   salons,
   userLocation,
@@ -34,12 +62,16 @@ function FitBoundsToSalons({
   userLocation?: Coordinates | null;
 }) {
   const map = useMap();
+  const isFirstRun = useRef(true);
 
   useEffect(() => {
     if (!map) return;
+    if (isFirstRun.current) {
+      isFirstRun.current = false;
+      return;
+    }
 
-    const points: Coordinates[] = salons.map((s) => ({ lat: s.lat, lng: s.lng }));
-    if (userLocation) points.push(userLocation);
+    const points = pointsFor(salons, userLocation);
 
     if (points.length === 0) {
       map.setCenter(COLOMBO_CENTER);
@@ -105,6 +137,9 @@ export function SalonMap({
   userLocation?: Coordinates | null;
 }) {
   const [openId, setOpenId] = useState<string | null>(null);
+  // Computed once, from whatever salons/userLocation this component first
+  // mounted with — <Map> only reads default* props on that initial paint.
+  const [initialBounds] = useState(() => boundsLiteralFor(pointsFor(salons, userLocation)));
 
   if (!GOOGLE_MAPS_API_KEY) {
     return (
@@ -118,8 +153,9 @@ export function SalonMap({
     <div className="h-96 overflow-hidden rounded-2xl border border-border sm:h-[32rem]">
       <APIProvider apiKey={GOOGLE_MAPS_API_KEY}>
         <Map
-          defaultCenter={COLOMBO_CENTER}
-          defaultZoom={12}
+          defaultBounds={initialBounds}
+          defaultCenter={initialBounds ? undefined : COLOMBO_CENTER}
+          defaultZoom={initialBounds ? undefined : 12}
           gestureHandling="greedy"
           disableDefaultUI={false}
           fullscreenControl={false}

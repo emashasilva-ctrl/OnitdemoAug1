@@ -31,8 +31,14 @@ export async function GET(request: NextRequest) {
 
   try {
     const identity = await fetchGoogleIdentity(code, codeVerifier);
-    const user = await findOrCreateOAuthUser("google", identity);
+    const { user, isNew } = await findOrCreateOAuthUser("google", identity);
     await createSession(user.id);
+
+    if (isNew) {
+      const chooserUrl = new URL("/become-a-vendor", request.url);
+      chooserUrl.searchParams.set("next", next);
+      return NextResponse.redirect(chooserUrl);
+    }
 
     if (user.isVendor) {
       const ownedSalon = await prisma.salon.findFirst({

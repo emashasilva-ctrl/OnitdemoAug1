@@ -23,7 +23,7 @@ export default async function Home() {
             Consider it done
           </span>
           <h1
-            className="mx-auto mb-10 max-w-[1000px] font-cormorant text-[clamp(58px,8.4vw,128px)] leading-[1.04] text-sand italic"
+            className="mx-auto mb-10 max-w-[1000px] text-balance font-cormorant text-[clamp(58px,8.4vw,128px)] leading-[1.04] text-sand italic"
             style={{ textShadow: "0 2px 30px rgba(0,0,0,.35)" }}
           >
             Whatever you need, <span className="not-italic">we&apos;re on it</span>
