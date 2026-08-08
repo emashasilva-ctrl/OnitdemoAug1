@@ -58,7 +58,7 @@ export function VideoCarousel({ children }: { children: React.ReactNode }) {
 
       <div id={HERO_SENTINEL_ID} className="pointer-events-none absolute inset-x-0 bottom-0 h-px" />
 
-      <div className="absolute bottom-12 left-1/2 z-40 flex -translate-x-1/2 items-center gap-8">
+      <div className="absolute bottom-8 left-1/2 z-40 flex -translate-x-1/2 items-center gap-3 px-4 sm:bottom-12 sm:gap-8 sm:px-0">
         {SLIDES.map((slide, i) => {
           const isActive = i === active;
           return (
@@ -73,7 +73,7 @@ export function VideoCarousel({ children }: { children: React.ReactNode }) {
                 style={{ height: isActive ? "48px" : "32px" }}
               />
               <span
-                className="text-[10px] uppercase tracking-[0.15em] text-sand transition-opacity duration-300"
+                className="hidden text-[10px] uppercase tracking-[0.15em] text-sand transition-opacity duration-300 sm:inline"
                 style={{ opacity: isActive ? 1 : 0.4 }}
               >
                 {slide.label}

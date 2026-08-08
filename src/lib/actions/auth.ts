@@ -111,3 +111,40 @@ export async function continueAsCustomer(formData: FormData) {
   const next = sanitizeNextPath(String(formData.get("next") ?? ""));
   redirect(next === "/become-a-vendor" ? "/" : next);
 }
+
+// Reverses becomeVendor() for someone who picked "Customer and vendor" by
+// mistake, or just no longer wants vendor access. If a salon was already
+// created, this hides it rather than deleting it — it disappears from
+// public browsing but every setting, service, and booking history stays
+// intact, so switching back to vendor later (via /become-a-vendor) picks
+// up right where they left off instead of starting over.
+export async function switchToCustomer() {
+  const session = await verifySession();
+  if (!session) redirect("/login");
+
+  await prisma.salon.updateMany({
+    where: { ownerId: session.userId },
+    data: { hidden: true },
+  });
+  await prisma.user.update({
+    where: { id: session.userId },
+    data: { isVendor: false },
+  });
+
+  revalidatePath("/", "layout");
+  redirect("/");
+}
+
+// Undoes switchToCustomer()'s hide — used from the vendor profile page once
+// someone has an existing (hidden) salon and wants it visible again.
+export async function unhideSalon() {
+  const session = await verifySession();
+  if (!session) redirect("/login");
+
+  await prisma.salon.updateMany({
+    where: { ownerId: session.userId },
+    data: { hidden: false },
+  });
+
+  revalidatePath("/", "layout");
+}

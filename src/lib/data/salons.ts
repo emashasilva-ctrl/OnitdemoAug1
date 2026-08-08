@@ -83,21 +83,29 @@ function mapSalon(row: SalonRow): Salon {
     phone: row.phone,
     whatsappNumber: row.whatsappNumber,
     mioSalonEmbedCode: row.mioSalonEmbedCode,
+    hidden: row.hidden,
   };
 }
 
+// Public-facing — excludes salons their vendor has hidden (e.g. after
+// switching their account back to customer-only). The owner's own view of
+// their salon goes through getSalonByOwnerId instead, which is never
+// filtered, so a hidden salon's data and settings stay fully reachable.
 export async function getSalonBySlug(slug: string): Promise<Salon | null> {
-  const row = await prisma.salon.findUnique({ where: { slug }, include: salonInclude });
+  const row = await prisma.salon.findUnique({ where: { slug, hidden: false }, include: salonInclude });
   return row ? mapSalon(row) : null;
 }
 
 export async function getAllSalons(): Promise<Salon[]> {
-  const rows = await prisma.salon.findMany({ include: salonInclude });
+  const rows = await prisma.salon.findMany({ where: { hidden: false }, include: salonInclude });
   return rows.map(mapSalon);
 }
 
 export async function getFeaturedSalons(): Promise<Salon[]> {
-  const rows = await prisma.salon.findMany({ where: { featured: true }, include: salonInclude });
+  const rows = await prisma.salon.findMany({
+    where: { featured: true, hidden: false },
+    include: salonInclude,
+  });
   return rows.map(mapSalon);
 }
 

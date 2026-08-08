@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/dal";
 import { getVendorVenue } from "@/lib/data/vendor";
+import { switchToCustomer } from "@/lib/actions/auth";
 import { SalonSetupForm } from "@/components/vendor/salon-setup-form";
 
 export const metadata: Metadata = {
@@ -30,6 +31,11 @@ export default async function VendorSetupPage() {
       <div className="mt-8">
         <SalonSetupForm />
       </div>
+      <form action={switchToCustomer} className="mt-6 text-center">
+        <button type="submit" className="text-sm text-muted-foreground underline hover:text-foreground">
+          Actually, I just want to be a customer
+        </button>
+      </form>
     </div>
   );
 }

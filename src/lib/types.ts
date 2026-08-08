@@ -95,6 +95,7 @@ export interface Salon {
   phone: string;
   whatsappNumber: string | null;
   mioSalonEmbedCode: string | null;
+  hidden: boolean;
 }
 
 interface AppointmentBase {

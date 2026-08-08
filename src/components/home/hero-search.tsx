@@ -78,7 +78,7 @@ export function HeroSearch({ areas }: { areas: string[] }) {
 
         <button
           onClick={handleFind}
-          className="rounded-full bg-sage-deep px-9 font-jost text-[11px] tracking-[0.24em] text-sand uppercase transition-opacity hover:opacity-85"
+          className="mx-auto w-fit self-auto rounded-full bg-sage-deep px-9 py-3 font-jost text-[11px] tracking-[0.24em] text-sand uppercase transition-opacity hover:opacity-85 sm:mx-0 sm:w-auto sm:self-stretch sm:py-0"
         >
           Find
         </button>

@@ -63,6 +63,12 @@ model Salon {
   noShowFeeEnabled Boolean @default(false)
   noShowFeePercent Int     @default(20)
 
+  // Set when a vendor switches their account back to customer-only —
+  // temporarily unlists the salon from public browsing/search without
+  // deleting any of its data, so they can re-enable it later instead of
+  // recreating everything from scratch.
+  hidden Boolean @default(false)
+
   services     Service[]
   openHours    OpenHours[]
   reviews      Review[]
