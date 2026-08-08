@@ -1,132 +1,134 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
-import { APIProvider, Map, Marker, InfoWindow, useMap, useMarkerRef } from "@vis.gl/react-google-maps";
+import { APIProvider, useApiIsLoaded } from "@vis.gl/react-google-maps";
 import type { Salon } from "@/lib/types";
 import type { Coordinates } from "@/lib/geo";
 
 const COLOMBO_CENTER: Coordinates = { lat: 6.9271, lng: 79.8612 };
 const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
 
-// A plain data-URI SVG string, not a google.maps.Symbol — this component is
-// only ever loaded client-side (dynamic import with ssr:false in
-// salon-browser.tsx), but the `google` global still doesn't exist until the
-// Maps script itself finishes loading, so anything referencing it directly
-// in a render body (rather than inside the library's own hooks/components)
-// would throw on first paint.
+// A plain data-URI SVG string, not a google.maps.Symbol — the `google`
+// global doesn't exist until the Maps script itself finishes loading, so
+// this can't be built from it directly.
 const USER_LOCATION_ICON =
   "data:image/svg+xml;utf8," +
   encodeURIComponent(
     '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"><circle cx="10" cy="10" r="7" fill="#4285F4" stroke="white" stroke-width="3"/></svg>'
   );
 
-function pointsFor(salons: Salon[], userLocation?: Coordinates | null): Coordinates[] {
-  const points: Coordinates[] = salons.map((s) => ({ lat: s.lat, lng: s.lng }));
-  if (userLocation) points.push(userLocation);
-  return points;
+function buildInfoWindowContent(salon: Salon): HTMLElement {
+  const wrapper = document.createElement("div");
+  wrapper.style.cssText = "display:flex;flex-direction:column;gap:2px;";
+
+  const name = document.createElement("p");
+  name.style.cssText = "font-weight:500;margin:0;";
+  name.textContent = salon.name;
+
+  const area = document.createElement("p");
+  area.style.cssText = "font-size:13px;color:#6b7280;margin:0;";
+  area.textContent = salon.area;
+
+  const link = document.createElement("a");
+  link.href = `/beauty/salons/${salon.slug}`;
+  link.textContent = "View salon";
+  link.style.cssText = "font-size:13px;font-weight:500;color:#2563eb;text-decoration:none;";
+
+  wrapper.append(name, area, link);
+  return wrapper;
 }
 
-// A plain {north,south,east,west} literal — not a google.maps.LatLngBounds
-// instance, so this can run before the Maps script (and the `google`
-// global) has loaded, unlike everything else in this file. Used to size
-// the map's very first paint natively via <Map defaultBounds>, instead of
-// racing a manual map.fitBounds() call against the library's own initial
-// idle/projection setup in an effect (that race left the map stuck with no
-// tiles ever rendering — bounds computed up front avoids it entirely).
-function boundsLiteralFor(points: Coordinates[]) {
-  if (points.length < 2) return undefined;
-  let north = points[0].lat;
-  let south = points[0].lat;
-  let east = points[0].lng;
-  let west = points[0].lng;
-  for (const p of points) {
-    north = Math.max(north, p.lat);
-    south = Math.min(south, p.lat);
-    east = Math.max(east, p.lng);
-    west = Math.min(west, p.lng);
-  }
-  return { north, south, east, west, padding: 48 };
-}
-
-// `defaultBounds`/`defaultCenter`/`defaultZoom` on <Map> only apply to the
-// initial paint — they don't react to prop changes, so without this the
-// camera would stay wherever it started even as filters change which
-// salons are shown. Re-fits the viewport whenever the visible set changes
-// after that first paint (which <Map defaultBounds> already handled).
-function FitBoundsToSalons({
+// This component builds the map with the raw Google Maps JS API (via refs
+// and effects) instead of @vis.gl/react-google-maps's own <Map>/<Marker>
+// components, which never rendered any tiles here — see the map-tiles
+// investigation notes for what was ruled out (API key/billing/referrer
+// restrictions, click handling, container sizing, defaultBounds timing,
+// React Strict Mode). Constructing the map on a deferred setTimeout rather
+// than synchronously inside the effect is a real, defensible hardening
+// (matches the library's own pattern of deferring camera operations after
+// DOM reattachment) even though it wasn't possible to get a fully clean
+// before/after confirmation that it alone fixes the underlying bug.
+// <APIProvider> is kept purely for script loading, which was never
+// implicated.
+function RawMap({
   salons,
   userLocation,
 }: {
   salons: Salon[];
   userLocation?: Coordinates | null;
 }) {
-  const map = useMap();
-  const isFirstRun = useRef(true);
+  const apiIsLoaded = useApiIsLoaded();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [map, setMap] = useState<google.maps.Map | null>(null);
+  const infoWindowRef = useRef<google.maps.InfoWindow | null>(null);
+  const markersRef = useRef<google.maps.Marker[]>([]);
+
+  useEffect(() => {
+    if (!apiIsLoaded || !containerRef.current) return;
+    const container = containerRef.current;
+    const timer = setTimeout(() => {
+      const newMap = new google.maps.Map(container, {
+        center: COLOMBO_CENTER,
+        zoom: 12,
+        gestureHandling: "greedy",
+        disableDefaultUI: false,
+        fullscreenControl: false,
+      });
+      infoWindowRef.current = new google.maps.InfoWindow();
+      setMap(newMap);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [apiIsLoaded]);
 
   useEffect(() => {
     if (!map) return;
-    if (isFirstRun.current) {
-      isFirstRun.current = false;
-      return;
+
+    for (const marker of markersRef.current) marker.setMap(null);
+    markersRef.current = [];
+
+    const points: Coordinates[] = salons.map((s) => ({ lat: s.lat, lng: s.lng }));
+
+    for (const salon of salons) {
+      const marker = new google.maps.Marker({
+        position: { lat: salon.lat, lng: salon.lng },
+        map,
+        title: salon.name,
+      });
+      marker.addListener("click", () => {
+        const infoWindow = infoWindowRef.current;
+        if (!infoWindow) return;
+        infoWindow.setContent(buildInfoWindowContent(salon));
+        infoWindow.open({ map, anchor: marker });
+      });
+      markersRef.current.push(marker);
     }
 
-    const points = pointsFor(salons, userLocation);
+    if (userLocation) {
+      points.push(userLocation);
+      markersRef.current.push(
+        new google.maps.Marker({
+          position: userLocation,
+          map,
+          title: "Your location",
+          icon: USER_LOCATION_ICON,
+        })
+      );
+    }
 
     if (points.length === 0) {
       map.setCenter(COLOMBO_CENTER);
       map.setZoom(12);
-      return;
-    }
-    if (points.length === 1) {
+    } else if (points.length === 1) {
       map.setCenter(points[0]);
       map.setZoom(15);
-      return;
+    } else {
+      const bounds = new google.maps.LatLngBounds();
+      for (const point of points) bounds.extend(point);
+      map.fitBounds(bounds, 48);
     }
-
-    const bounds = new google.maps.LatLngBounds();
-    for (const point of points) bounds.extend(point);
-    map.fitBounds(bounds, 48);
   }, [map, salons, userLocation]);
 
-  return null;
-}
-
-function SalonMarker({
-  salon,
-  isOpen,
-  onToggle,
-}: {
-  salon: Salon;
-  isOpen: boolean;
-  onToggle: (id: string | null) => void;
-}) {
-  const [markerRef, marker] = useMarkerRef();
-
-  return (
-    <>
-      <Marker
-        ref={markerRef}
-        position={{ lat: salon.lat, lng: salon.lng }}
-        title={salon.name}
-        onClick={() => onToggle(isOpen ? null : salon.id)}
-      />
-      {isOpen && marker && (
-        <InfoWindow anchor={marker} onCloseClick={() => onToggle(null)}>
-          <div className="flex flex-col gap-0.5">
-            <p className="font-medium text-foreground">{salon.name}</p>
-            <p className="text-sm text-muted-foreground">{salon.area}</p>
-            <Link
-              href={`/beauty/salons/${salon.slug}`}
-              className="text-sm font-medium text-primary hover:underline"
-            >
-              View salon
-            </Link>
-          </div>
-        </InfoWindow>
-      )}
-    </>
-  );
+  return <div ref={containerRef} className="size-full" />;
 }
 
 export function SalonMap({
@@ -136,11 +138,6 @@ export function SalonMap({
   salons: Salon[];
   userLocation?: Coordinates | null;
 }) {
-  const [openId, setOpenId] = useState<string | null>(null);
-  // Computed once, from whatever salons/userLocation this component first
-  // mounted with — <Map> only reads default* props on that initial paint.
-  const [initialBounds] = useState(() => boundsLiteralFor(pointsFor(salons, userLocation)));
-
   if (!GOOGLE_MAPS_API_KEY) {
     return (
       <div className="flex h-96 items-center justify-center rounded-2xl border border-border text-sm text-muted-foreground sm:h-[32rem]">
@@ -152,28 +149,7 @@ export function SalonMap({
   return (
     <div className="h-96 overflow-hidden rounded-2xl border border-border sm:h-[32rem]">
       <APIProvider apiKey={GOOGLE_MAPS_API_KEY}>
-        <Map
-          defaultBounds={initialBounds}
-          defaultCenter={initialBounds ? undefined : COLOMBO_CENTER}
-          defaultZoom={initialBounds ? undefined : 12}
-          gestureHandling="greedy"
-          disableDefaultUI={false}
-          fullscreenControl={false}
-          className="size-full"
-        >
-          <FitBoundsToSalons salons={salons} userLocation={userLocation} />
-          {userLocation && (
-            <Marker position={userLocation} icon={USER_LOCATION_ICON} title="Your location" />
-          )}
-          {salons.map((salon) => (
-            <SalonMarker
-              key={salon.id}
-              salon={salon}
-              isOpen={openId === salon.id}
-              onToggle={setOpenId}
-            />
-          ))}
-        </Map>
+        <RawMap salons={salons} userLocation={userLocation} />
       </APIProvider>
     </div>
   );
