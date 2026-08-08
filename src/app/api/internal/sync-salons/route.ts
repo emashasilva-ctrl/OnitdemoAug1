@@ -4,6 +4,18 @@ import { prisma } from "@/lib/db";
 // Temporary, one-off endpoint to sync a handful of local test salons (never
 // pushed to production because they only ever existed as local SQLite rows,
 // not code) up to the production Turso database. Delete this route once run.
+export async function GET(request: NextRequest) {
+  const secret = request.headers.get("x-sync-secret");
+  if (!secret || secret !== process.env.SYNC_SECRET) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+  const salons = await prisma.salon.findMany({
+    where: { name: { contains: "Mio" } },
+    include: { owner: true },
+  });
+  return NextResponse.json({ salons });
+}
+
 export async function POST(request: NextRequest) {
   const secret = request.headers.get("x-sync-secret");
   if (!secret || secret !== process.env.SYNC_SECRET) {
