@@ -12,6 +12,11 @@ model User {
   passwordHash String?
   name         String
   phone        String?
+
+  // International format, used to build a wa.me link for salons that want to
+  // reach the customer directly. Null until the customer sets it.
+  whatsappNumber String?
+
   isVendor     Boolean  @default(false)
   googleId     String?  @unique
   facebookId   String?  @unique

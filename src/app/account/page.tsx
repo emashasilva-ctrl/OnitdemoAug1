@@ -1,9 +1,16 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/dal";
+import { prisma } from "@/lib/db";
 import { AccountDetailsForm } from "@/components/account/account-details-form";
+import { ChangePasswordForm } from "@/components/account/change-password-form";
+import { DeleteAccountSection } from "@/components/account/delete-account-section";
 
 export default async function AccountPage() {
   const user = await requireUser("/account");
+  const fullUser = await prisma.user.findUniqueOrThrow({
+    where: { id: user.id },
+    select: { whatsappNumber: true, passwordHash: true },
+  });
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 sm:py-14">
@@ -14,11 +21,17 @@ export default async function AccountPage() {
         Update the personal details tied to your On It! account.
       </p>
 
-      <div className="mt-8">
+      <div className="mt-8 flex flex-col gap-6">
         <AccountDetailsForm
           email={user.email}
-          initial={{ name: user.name, phone: user.phone ?? "" }}
+          initial={{
+            name: user.name,
+            phone: user.phone ?? "",
+            whatsappNumber: fullUser.whatsappNumber ?? "",
+          }}
         />
+        <ChangePasswordForm hasPassword={fullUser.passwordHash !== null} />
+        <DeleteAccountSection />
       </div>
 
       {user.isVendor && (
