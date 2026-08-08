@@ -16,6 +16,18 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({ salons });
 }
 
+export async function PATCH(request: NextRequest) {
+  const secret = request.headers.get("x-sync-secret");
+  if (!secret || secret !== process.env.SYNC_SECRET) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+  const salon = await prisma.salon.update({
+    where: { id: "cmsaglytd0001l904nufd0ke9" },
+    data: { name: "Colombo 5 Hair & Beauty" },
+  });
+  return NextResponse.json({ ok: true, salon });
+}
+
 export async function POST(request: NextRequest) {
   const secret = request.headers.get("x-sync-secret");
   if (!secret || secret !== process.env.SYNC_SECRET) {
