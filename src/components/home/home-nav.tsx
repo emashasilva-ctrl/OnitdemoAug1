@@ -56,18 +56,18 @@ export function HomeNav({ user }: { user: CurrentUser }) {
 
   return (
     <nav
-      className={`fixed top-0 left-0 z-50 grid w-full grid-cols-[1fr_auto_1fr] items-center gap-4 border-b px-8 py-6 font-jost transition-colors duration-400 ${navBg} ${navBorder}`}
+      className={`fixed top-0 left-0 z-50 grid w-full grid-cols-[1fr_auto_1fr] items-center gap-4 border-b px-8 py-6 font-jost transition-colors duration-400 sm:py-[14px] ${navBg} ${navBorder}`}
     >
-      <div className="flex flex-col items-start gap-2">
+      <div className="flex flex-col items-start gap-2 sm:gap-1">
         <Link
           href="/"
-          className={`font-cormorant text-3xl font-bold tracking-[0.04em] ${navText}`}
+          className={`font-cormorant text-3xl font-bold tracking-[0.04em] sm:text-2xl ${navText}`}
         >
           On It!
         </Link>
         <Link
           href="/beauty/salons"
-          className={`hidden rounded-full px-6 py-[9px] text-[10px] uppercase tracking-[0.2em] transition-opacity hover:opacity-85 sm:inline-flex ${pillFilled}`}
+          className={`hidden rounded-full px-6 py-[9px] text-[10px] uppercase tracking-[0.2em] transition-opacity hover:opacity-85 sm:inline-flex sm:py-1.5 ${pillFilled}`}
         >
           Book Now
         </Link>
