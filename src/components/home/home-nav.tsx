@@ -57,7 +57,7 @@ export function HomeNav({ user }: { user: CurrentUser }) {
     <nav
       className={`fixed top-0 left-0 z-50 grid w-full grid-cols-[1fr_auto_1fr] items-center gap-4 border-b px-8 py-6 font-jost transition-colors duration-400 sm:py-3 ${navBg} ${navBorder}`}
     >
-      <div className="flex items-center">
+      <div className="col-start-1 flex items-center">
         <Link
           href="/"
           className={`font-cormorant text-3xl font-bold tracking-[0.04em] sm:text-[34px] ${navText}`}
@@ -66,7 +66,7 @@ export function HomeNav({ user }: { user: CurrentUser }) {
         </Link>
       </div>
 
-      <div className={`hidden items-center justify-center gap-8 text-[13px] uppercase tracking-[0.22em] md:flex ${navText}`}>
+      <div className={`col-start-2 hidden items-center justify-center gap-8 text-[13px] uppercase tracking-[0.22em] md:flex ${navText}`}>
         {NAV_LINKS.map((link) => (
           <Link key={link.href} href={link.href} className="transition-colors duration-300 hover:text-terracotta">
             {link.label}
@@ -74,7 +74,7 @@ export function HomeNav({ user }: { user: CurrentUser }) {
         ))}
       </div>
 
-      <div className="flex items-center justify-end gap-3">
+      <div className="col-start-3 flex items-center justify-end gap-3">
         <Link
           href="/bookings"
           aria-label="My bookings"
