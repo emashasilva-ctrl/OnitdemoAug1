@@ -73,9 +73,18 @@ function RawMap({
         gestureHandling: "greedy",
         disableDefaultUI: false,
         fullscreenControl: false,
+        mapTypeId: google.maps.MapTypeId.ROADMAP,
       });
       infoWindowRef.current = new google.maps.InfoWindow();
       setMap(newMap);
+      // The tile grid can compute against a stale container size from the
+      // instant it was constructed (e.g. mid-transition into an inactive
+      // tab becoming visible) and never re-request tiles afterward even
+      // once the real layout settles — nudge it once real layout is done.
+      requestAnimationFrame(() => {
+        google.maps.event.trigger(newMap, "resize");
+        newMap.setCenter(COLOMBO_CENTER);
+      });
     }, 0);
     return () => clearTimeout(timer);
   }, [apiIsLoaded]);
