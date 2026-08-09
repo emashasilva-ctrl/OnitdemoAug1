@@ -35,6 +35,12 @@ export default async function SalonDetailPage(
   ]);
   if (!salon) notFound();
 
+  // BookingPanel is a Client Component and never touches photos — passing
+  // the full salon object would ship its (potentially huge, base64) cover
+  // and gallery images down as hydration data even though nothing renders
+  // them there.
+  const salonForBooking = { ...salon, coverImage: null, galleryImages: [] };
+
   return (
     <div className="pb-28 lg:pb-16">
       {/* Gallery */}
@@ -42,7 +48,7 @@ export default async function SalonDetailPage(
         <div className="relative col-span-2 aspect-4/3 overflow-hidden rounded-2xl bg-muted sm:aspect-16/9 lg:aspect-auto lg:row-span-2">
           <VenueImage
             seed={salon.imageSeed}
-            src={salon.coverImage}
+            src={salon.coverImage ? `/api/salon-photo/${salon.id}?type=cover` : null}
             icon={getCategory(salon.categories[0])?.icon}
             className="size-full"
           />
@@ -54,7 +60,7 @@ export default async function SalonDetailPage(
           >
             <VenueImage
               seed={seed}
-              src={salon.galleryImages[i]}
+              src={salon.galleryImages[i] ? `/api/salon-photo/${salon.id}?type=gallery&index=${i}` : null}
               icon={getCategory(salon.categories[i + 1] ?? salon.categories[0])?.icon}
               className="size-full"
             />
@@ -144,7 +150,7 @@ export default async function SalonDetailPage(
                 {salon.mioSalonEmbedCode ? (
                   <MioSalonBookingEmbed embedCode={salon.mioSalonEmbedCode} salonName={salon.name} />
                 ) : (
-                  <BookingPanel salon={salon} currentUser={currentUser} />
+                  <BookingPanel salon={salonForBooking} currentUser={currentUser} />
                 )}
               </div>
             </div>

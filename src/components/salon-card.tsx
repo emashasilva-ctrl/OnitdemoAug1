@@ -42,7 +42,7 @@ export function SalonCard({
       <div className="relative aspect-4/3 w-full overflow-hidden bg-muted">
         <VenueImage
           seed={salon.imageSeed}
-          src={salon.coverImage}
+          src={salon.coverImage ? `/api/salon-photo/${salon.id}?type=cover` : null}
           icon={getCategory(salon.categories[0])?.icon}
           className="size-full transition-transform duration-300 group-hover:scale-105"
         />
