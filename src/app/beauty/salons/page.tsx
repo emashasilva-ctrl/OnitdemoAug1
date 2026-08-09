@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { SalonBrowser } from "@/components/salons/salon-browser";
+import { SalonBrowser } from "@/components/salons/salon-browser-loader";
 import { getAllSalons } from "@/lib/data/salons";
 
 export const metadata: Metadata = {

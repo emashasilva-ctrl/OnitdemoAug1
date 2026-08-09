@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { LocateFixed, Map as MapIcon, SlidersHorizontal } from "lucide-react";
 import { SalonCard } from "@/components/salon-card";
@@ -96,46 +96,6 @@ export function SalonBrowser({
   }, [salons, category, area, sort, userLocation]);
 
   const hasFilters = category !== ALL || area !== ALL;
-
-  // Something in this component's interactive shell (Radix Select/Tabs, or
-  // the dynamically-imported map) reliably triggers a React hydration
-  // mismatch on Vercel specifically — never reproduced locally, including
-  // against production data, so the exact cause couldn't be pinned down
-  // directly. Gating the real interactive UI behind a mount check makes the
-  // server-rendered HTML and the client's very first paint provably
-  // identical (this plain, non-interactive fallback), which eliminates any
-  // possible mismatch regardless of its exact source. The real filters,
-  // tabs, and map take over moments later once mounted — a page reload's
-  // usual React hydration, not a meaningfully different loading experience.
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    // The whole point is detecting "client, post-hydration" — there's no
-    // synchronous way to derive that during the render this effect runs
-    // after, so this is an intentional exception to the usual guidance
-    // against setState-in-effect.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setMounted(true);
-  }, []);
-
-  if (!mounted) {
-    return (
-      <div>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-3">
-          <div className="h-10 w-full animate-pulse rounded-md bg-muted sm:w-56" />
-          <div className="h-10 w-full animate-pulse rounded-md bg-muted sm:w-56" />
-          <div className="h-10 w-full animate-pulse rounded-md bg-muted sm:w-48" />
-        </div>
-        <p className="mt-4 text-sm text-muted-foreground">
-          {salons.length} salon{salons.length === 1 ? "" : "s"} found
-        </p>
-        <div className="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {salons.map((salon) => (
-            <SalonCard key={salon.id} salon={salon} now={now} />
-          ))}
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div>
