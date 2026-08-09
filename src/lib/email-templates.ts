@@ -120,6 +120,99 @@ export function bookingConfirmationEmail({
   };
 }
 
+export function cancellationEmail({
+  customerName,
+  salonName,
+  serviceName,
+  date,
+  time,
+  cancellationFeeLKR,
+}: {
+  customerName: string;
+  salonName: string;
+  serviceName: string;
+  date: string;
+  time: string;
+  cancellationFeeLKR: number | null;
+}): { subject: string; html: string } {
+  const rows: [string, string][] = [
+    ["Salon", salonName],
+    ["Service", serviceName],
+    ["Date", formatDate(date)],
+    ["Time", time],
+  ];
+  const rowsHtml = rows
+    .map(
+      ([label, value]) =>
+        `<tr><td style="padding:6px 0;color:#8a8578;">${label}</td><td style="padding:6px 0;text-align:right;font-weight:600;">${value}</td></tr>`
+    )
+    .join("");
+
+  return {
+    subject: `Booking cancelled — ${salonName}`,
+    html: layout(
+      `<p>Hi ${customerName},</p>
+       <p>Your appointment has been cancelled:</p>
+       <table role="presentation" width="100%" style="border-collapse:collapse;margin:16px 0;">
+         ${rowsHtml}
+       </table>
+       ${
+         cancellationFeeLKR
+           ? `<p>A cancellation fee of ${money(cancellationFeeLKR)} applies, payable at the salon on your next visit.</p>`
+           : ""
+       }
+       ${button(`${APP_URL}/beauty/salons`, "Book another appointment")}`
+    ),
+  };
+}
+
+export function newBookingVendorEmail({
+  vendorName,
+  salonName,
+  customerName,
+  customerPhone,
+  serviceName,
+  date,
+  time,
+  priceLKR,
+}: {
+  vendorName: string;
+  salonName: string;
+  customerName: string;
+  customerPhone: string;
+  serviceName: string;
+  date: string;
+  time: string;
+  priceLKR: number;
+}): { subject: string; html: string } {
+  const rows: [string, string][] = [
+    ["Customer", customerName],
+    ["Phone", customerPhone],
+    ["Service", serviceName],
+    ["Date", formatDate(date)],
+    ["Time", time],
+  ];
+  const rowsHtml = rows
+    .map(
+      ([label, value]) =>
+        `<tr><td style="padding:6px 0;color:#8a8578;">${label}</td><td style="padding:6px 0;text-align:right;font-weight:600;">${value}</td></tr>`
+    )
+    .join("");
+
+  return {
+    subject: `New booking — ${salonName}`,
+    html: layout(
+      `<p>Hi ${vendorName},</p>
+       <p>You've got a new booking at ${salonName}:</p>
+       <table role="presentation" width="100%" style="border-collapse:collapse;margin:16px 0;">
+         ${rowsHtml}
+         <tr><td style="padding:10px 0 0;color:#8a8578;border-top:1px solid #e5e0d5;">Total</td><td style="padding:10px 0 0;text-align:right;font-weight:700;border-top:1px solid #e5e0d5;">${money(priceLKR)}</td></tr>
+       </table>
+       ${button(`${APP_URL}/vendor/dashboard`, "View your dashboard")}`
+    ),
+  };
+}
+
 export function billEmail({
   customerName,
   salonName,

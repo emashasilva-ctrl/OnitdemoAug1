@@ -5,7 +5,7 @@ import { prisma } from "@/lib/db";
 import { requireUser, verifySession } from "@/lib/dal";
 import { computePrice, type PricingRuleRow } from "@/lib/pricing";
 import { sendEmail } from "@/lib/email";
-import { bookingConfirmationEmail } from "@/lib/email-templates";
+import { bookingConfirmationEmail, cancellationEmail, newBookingVendorEmail } from "@/lib/email-templates";
 import type { AppointmentRecord } from "@/lib/types";
 
 export type BookingActionResult = { success: true } | { success: false; error: string };
@@ -54,7 +54,7 @@ export async function createSalonBooking(input: {
 
   const salon = await prisma.salon.findUnique({
     where: { id: input.salonId },
-    select: { name: true },
+    select: { name: true, owner: { select: { email: true, name: true } } },
   });
 
   await prisma.appointment.create({
@@ -94,6 +94,21 @@ export async function createSalonBooking(input: {
       }),
     });
   }
+  if (salon?.owner?.email) {
+    await sendEmail({
+      to: salon.owner.email,
+      ...newBookingVendorEmail({
+        vendorName: salon.owner.name,
+        salonName: salon.name,
+        customerName: input.customerName,
+        customerPhone: input.customerPhone,
+        serviceName: service.name,
+        date: input.date,
+        time: input.time,
+        priceLKR: breakdown.finalPriceLKR,
+      }),
+    });
+  }
 
   revalidatePath("/bookings");
   return { success: true };
@@ -107,8 +122,12 @@ export async function cancelAppointmentAction(id: string): Promise<BookingAction
     where: { id },
     select: {
       customerId: true,
+      customerName: true,
       priceLKR: true,
-      salon: { select: { cancellationFeeEnabled: true, cancellationFeePercent: true } },
+      date: true,
+      time: true,
+      salon: { select: { name: true, cancellationFeeEnabled: true, cancellationFeePercent: true } },
+      service: { select: { name: true } },
     },
   });
   if (!appointment || appointment.customerId !== session.userId) {
@@ -124,6 +143,24 @@ export async function cancelAppointmentAction(id: string): Promise<BookingAction
     where: { id, customerId: session.userId },
     data: { status: "CANCELLED", cancellationFeeLKR: feeLKR },
   });
+
+  const customer = await prisma.user.findUnique({
+    where: { id: session.userId },
+    select: { email: true },
+  });
+  if (customer?.email && appointment.salon && appointment.service) {
+    await sendEmail({
+      to: customer.email,
+      ...cancellationEmail({
+        customerName: appointment.customerName,
+        salonName: appointment.salon.name,
+        serviceName: appointment.service.name,
+        date: appointment.date,
+        time: appointment.time,
+        cancellationFeeLKR: feeLKR,
+      }),
+    });
+  }
 
   revalidatePath("/bookings");
   return { success: true };
