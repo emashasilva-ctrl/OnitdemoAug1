@@ -7,19 +7,30 @@ import { getCategory } from "@/lib/data/categories";
 import { Badge } from "@/components/ui/badge";
 import { toLocalISODate } from "@/lib/time";
 
+// `now` is passed down from the server-rendered page when this card lives
+// inside a Client Component (SalonBrowser), so hydration reuses the exact
+// same "now" the server used instead of re-reading the clock client-side —
+// two independent new Date() reads can straddle a slot boundary and make
+// "next available slot" differ between the SSR and hydration passes, which
+// is a real (if rare) hydration mismatch. Server-only render paths (e.g.
+// the /beauty landing page) never hydrate this component, so they can omit
+// it and fall back to reading the clock directly.
 export function SalonCard({
   salon,
   distanceLabel,
+  now,
 }: {
   salon: Salon;
   distanceLabel?: string;
+  now?: Date;
 }) {
+  const effectiveNow = now ?? new Date();
   const shortestService = [...salon.services].sort(
     (a, b) => a.durationMins - b.durationMins
   )[0];
-  const todayISO = toLocalISODate(new Date());
+  const todayISO = toLocalISODate(effectiveNow);
   const slots = shortestService
-    ? getSlotsForDate(salon.id, shortestService.durationMins, todayISO)
+    ? getSlotsForDate(salon.id, shortestService.durationMins, todayISO, effectiveNow)
     : [];
   const nextSlot = nextAvailableLabel(slots);
 

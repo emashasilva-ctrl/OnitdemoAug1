@@ -16,6 +16,10 @@ export default async function SalonsPage(props: PageProps<"/beauty/salons">) {
 
   const salons = await getAllSalons();
   const areas = Array.from(new Set(salons.map((s) => s.area))).sort();
+  // Computed once, server-side, and threaded down through SalonBrowser (a
+  // Client Component) to every SalonCard — see salon-card.tsx's `now` prop
+  // comment for why this matters for hydration.
+  const now = new Date();
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-14">
@@ -33,6 +37,7 @@ export default async function SalonsPage(props: PageProps<"/beauty/salons">) {
         areas={areas}
         initialCategory={category}
         initialArea={area}
+        now={now}
       />
     </div>
   );

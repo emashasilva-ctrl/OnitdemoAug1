@@ -38,11 +38,13 @@ export function SalonBrowser({
   areas,
   initialCategory,
   initialArea,
+  now,
 }: {
   salons: Salon[];
   areas: string[];
   initialCategory?: string;
   initialArea?: string;
+  now: Date;
 }) {
   const [category, setCategory] = useState(initialCategory ?? ALL);
   const [area, setArea] = useState(initialArea ?? ALL);
@@ -128,7 +130,7 @@ export function SalonBrowser({
         </p>
         <div className="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {salons.map((salon) => (
-            <SalonCard key={salon.id} salon={salon} />
+            <SalonCard key={salon.id} salon={salon} now={now} />
           ))}
         </div>
       </div>
@@ -229,6 +231,7 @@ export function SalonBrowser({
                 <SalonCard
                   key={salon.id}
                   salon={salon}
+                  now={now}
                   distanceLabel={
                     userLocation ? formatDistanceKm(distanceKm(userLocation, salon)) : undefined
                   }
