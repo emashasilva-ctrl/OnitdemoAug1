@@ -9,10 +9,8 @@ import { getAllSalons, getCategoryStartingPrices } from "@/lib/data/salons";
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const [salons, prices] = await Promise.all([
-    getAllSalons(),
-    getCategoryStartingPrices(),
-  ]);
+  const salons = await getAllSalons();
+  const prices = getCategoryStartingPrices(salons);
   const areas = Array.from(new Set(salons.map((s) => s.area))).sort();
 
   return (

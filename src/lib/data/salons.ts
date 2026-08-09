@@ -118,10 +118,13 @@ export async function getSalonByOwnerId(ownerId: string): Promise<Salon | null> 
 // that category among their own — not a strict per-service category match,
 // since Service.category is a free-text label a vendor can customize.
 // null means no onboarded salon offers that category yet.
-export async function getCategoryStartingPrices(): Promise<
-  Record<CategorySlug, number | null>
-> {
-  const salons = await getAllSalons();
+//
+// Takes the already-fetched salon list rather than querying again — callers
+// that also need the full list (e.g. the homepage) would otherwise pay for
+// the same heavy `salonInclude` query twice on every request.
+export function getCategoryStartingPrices(
+  salons: Salon[]
+): Record<CategorySlug, number | null> {
   const result = {} as Record<CategorySlug, number | null>;
 
   for (const category of categories) {
